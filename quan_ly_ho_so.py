@@ -28,7 +28,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-st.markdown('<div class="header-box"><h1>🗂️ QUẢN LÝ HỒ SƠ CÔNG CHỨC - TGDV</h1><p style="margin:0; opacity: 0.8;">Cơ sở dữ liệu nhân sự số hóa</p></div>', unsafe_allow_html=True)
+st.markdown('<div class="header-box"><h1>🗂️ QUẢN LÝ HỒ SƠ BAN TUYÊN GIÁO VÀ DÂN VẬN TỈNH ỦY TUYÊN QUANG</h1><p style="margin:0; opacity: 0.8;">Cơ sở dữ liệu nhân sự số hóa</p></div>', unsafe_allow_html=True)
 
 menu = st.sidebar.radio("📌 CHỨC NĂNG:", ["🔍 Tra cứu & Xem Hồ sơ", "➕ Nhập liệu Đa nhiệm"])
 st.sidebar.write("---")
