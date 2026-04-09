@@ -46,7 +46,7 @@ if not st.session_state["logged_in"]:
         tab_login, tab_register = st.tabs(["🔐 Đăng nhập", "📝 Đăng ký Tài khoản"])
         
         with tab_login:
-            st.markdown('<div class="auth-box">', unsafe_allow_html=True)
+            # Đã xóa div rác ở đây
             with st.form("login_form"):
                 log_ma = st.text_input("Mã CBCC (Tên đăng nhập):").strip().upper()
                 log_pass = st.text_input("Mật khẩu:", type="password")
@@ -68,10 +68,9 @@ if not st.session_state["logged_in"]:
                                 else: st.error("❌ Sai mật khẩu!")
                             else: st.error("❌ Không tìm thấy Mã CBCC này!")
                         except Exception as e: st.error(f"Lỗi kết nối: {e}")
-            st.markdown('</div>', unsafe_allow_html=True)
 
         with tab_register:
-            st.markdown('<div class="auth-box">', unsafe_allow_html=True)
+            # Đã xóa div rác ở đây
             with st.form("register_form"):
                 reg_ma = st.text_input("Mã CBCC (Sẽ dùng làm Tên đăng nhập)*").strip().upper()
                 reg_name = st.text_input("Họ và tên*")
@@ -91,7 +90,6 @@ if not st.session_state["logged_in"]:
                                 supabase.table("tai_khoan").insert({"ma_cbcc": reg_ma, "mat_khau": reg_pass, "ho_ten": reg_name.title(), "chuc_vu": reg_cv, "don_vi": reg_dv}).execute()
                                 st.success("✅ Gửi yêu cầu thành công! Vui lòng chờ Admin phê duyệt.")
                         except Exception as e: st.error(f"Lỗi: {e}")
-            st.markdown('</div>', unsafe_allow_html=True)
     st.stop()
 
 # ==========================================
