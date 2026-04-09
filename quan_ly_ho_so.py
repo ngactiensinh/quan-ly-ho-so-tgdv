@@ -108,7 +108,7 @@ if st.session_state["role"] == "Admin":
 menu = st.sidebar.radio("📌 CHỨC NĂNG:", menu_options)
 st.sidebar.write("---")
 
-st.markdown('<div class="header-box"><h1>🗂️ QUẢN LÝ HỒ SƠ CÔNG CHỨC - TGDV</h1></div>', unsafe_allow_html=True)
+st.markdown('<div class="header-box"><h1>🗂️ QUẢN LÝ HỒ SƠ CÁN BỘ BAN TUYÊN GIÁO VÀ DÂN VẬN TỈNH ỦY TUYÊN QUANG</h1></div>', unsafe_allow_html=True)
 
 @st.cache_data(ttl=5)
 def load_profiles():
