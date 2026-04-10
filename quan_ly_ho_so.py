@@ -2,6 +2,8 @@ import streamlit as st
 import pandas as pd
 from supabase import create_client, Client
 import plotly.express as px
+import base64
+import os
 
 st.set_page_config(page_title="Hồ sơ CBCC - TGDV", page_icon="🗂️", layout="wide")
 
@@ -15,6 +17,21 @@ try:
     supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 except:
     pass
+
+# ==========================================
+# HÀM XỬ LÝ LOGO (TỰ ĐỘNG LẤY ẢNH LOCAL HOẶC WEB)
+# ==========================================
+def get_logo_html(height="80px"):
+    # Tìm file logo.png trong thư mục, nếu không có thì lấy link mạng
+    logo_path = "logo.png"
+    if os.path.exists(logo_path):
+        with open(logo_path, "rb") as f:
+            data = base64.b64encode(f.read()).decode("utf-8")
+            return f'<img src="data:image/png;base64,{data}" style="height: {height};">'
+    else:
+        # Link Quốc huy dự phòng
+        url = "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/Qu%E1%BB%91c_huy_Vi%E1%BB%87t_Nam.svg/250px-Qu%E1%BB%91c_huy_Vi%E1%BB%87t_Nam.svg.png"
+        return f'<img src="{url}" style="height: {height};">'
 
 # ==========================================
 # DANH MỤC CHUẨN HÓA
@@ -61,8 +78,24 @@ st.markdown("""
     .profile-title { color: #6c757d; font-size: 15px; font-style: italic; font-weight: bold; margin-bottom: 15px;}
     .profile-info { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; font-size: 15px;}
     .info-label { color: #495057; font-weight: bold; }
-    .header-box { background-color: #004B87; padding: 20px; border-radius: 10px; margin-bottom: 25px; text-align: center; color: white; box-shadow: 0 4px 10px rgba(0,0,0,0.1);}
-    .header-box h1 { margin: 0; font-size: 28px; text-transform: uppercase; font-weight: 900;}
+    
+    /* Thiết kế Header chứa Logo mới */
+    .header-box { 
+        background-color: #004B87; 
+        padding: 15px 30px; 
+        border-radius: 10px; 
+        margin-bottom: 25px; 
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 20px;
+        color: white; 
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+    .header-content { display: flex; flex-direction: column; align-items: flex-start;}
+    .header-box h1 { margin: 0; font-size: 24px; text-transform: uppercase; font-weight: 900; line-height: 1.2;}
+    .header-box p { margin: 0; font-size: 14px; opacity: 0.9;}
+    
     div[data-testid="stForm"] { background-color: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; padding: 20px;}
     .metric-container { background-color: #f8f9fa; border-left: 5px solid #C8102E; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
     .metric-title { font-size: 14px; font-weight: bold; color: #6c757d; text-transform: uppercase; margin-bottom: 5px;}
@@ -82,7 +115,16 @@ if "menu_selection" not in st.session_state: st.session_state["menu_selection"] 
 # MÀN HÌNH XÁC THỰC
 # ==========================================
 if not st.session_state["logged_in"]:
-    st.markdown('<div class="header-box"><h1>🗂️ HỆ THỐNG QUẢN LÝ HỒ SƠ TGDV</h1><p style="margin:0; opacity: 0.8;">Cổng thông tin nội bộ</p></div>', unsafe_allow_html=True)
+    st.markdown(f"""
+    <div class="header-box">
+        <div>{get_logo_html("70px")}</div>
+        <div class="header-content">
+            <h1>HỆ THỐNG QUẢN LÝ HỒ SƠ TGDV</h1>
+            <p>BAN TUYÊN GIÁO VÀ DÂN VẬN TỈNH ỦY TUYÊN QUANG</p>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+    
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
         tab_login, tab_register = st.tabs(["🔐 Đăng nhập", "📝 Đăng ký Tài khoản"])
@@ -130,6 +172,9 @@ if not st.session_state["logged_in"]:
 # ==========================================
 # GIAO DIỆN CHÍNH
 # ==========================================
+# Chèn Logo lên thanh Sidebar
+st.sidebar.markdown(f"<div style='text-align: center; margin-bottom: 20px;'>{get_logo_html('100px')}</div>", unsafe_allow_html=True)
+
 st.sidebar.markdown(f"👋 Xin chào, **{st.session_state['ho_ten']}**")
 st.sidebar.markdown(f"🔑 Quyền: **{st.session_state['role']}**")
 
@@ -143,20 +188,28 @@ if is_admin:
 else:
     menu_options = ["🔍 Hồ sơ của tôi", "➕ Cập nhật Hồ sơ cá nhân"]
 
-# Lấy đúng Index để Menu nhảy mượt mà không lỗi
 if st.session_state["menu_selection"] not in menu_options:
     st.session_state["menu_selection"] = menu_options[0]
 
 current_idx = menu_options.index(st.session_state["menu_selection"])
 menu = st.sidebar.radio("📌 CHỨC NĂNG:", menu_options, index=current_idx)
 
-# Đồng bộ khi người dùng click menu
 if menu != st.session_state["menu_selection"]:
     st.session_state["menu_selection"] = menu
     st.rerun()
 
 st.sidebar.write("---")
-st.markdown('<div class="header-box"><h1>🗂️ QUẢN LÝ HỒ SƠ CÁN BỘ BAN TUYÊN GIÁO VÀ DÂN VẬN TỈNH ỦY TUYÊN QUANG</h1></div>', unsafe_allow_html=True)
+
+# Header chính có gắn Logo
+st.markdown(f"""
+<div class="header-box">
+    <div>{get_logo_html("60px")}</div>
+    <div class="header-content">
+        <h1>QUẢN LÝ HỒ SƠ CÁN BỘ</h1>
+        <p>BAN TUYÊN GIÁO VÀ DÂN VẬN TỈNH ỦY TUYÊN QUANG</p>
+    </div>
+</div>
+""", unsafe_allow_html=True)
 
 @st.cache_data(ttl=5)
 def load_profiles():
@@ -316,7 +369,6 @@ elif menu in ["🔍 Tra cứu & Xem Hồ sơ", "🔍 Hồ sơ của tôi"]:
         if ma_chon:
             info = df_hoso[df_hoso['id'] == ma_chon].iloc[0].fillna("")
             
-            # NÚT CHUYỂN TRANG KHÔNG BỊ LỖI
             if is_admin or info['id'] == st.session_state["ma_cbcc"]:
                 if st.button("✏️ Chỉnh sửa Hồ sơ này"):
                     st.session_state["edit_target_id"] = info['id']
