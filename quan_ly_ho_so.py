@@ -56,8 +56,9 @@ if "logged_in" not in st.session_state: st.session_state["logged_in"] = False
 if "ma_cbcc" not in st.session_state: st.session_state["ma_cbcc"] = ""
 if "ho_ten" not in st.session_state: st.session_state["ho_ten"] = ""
 if "role" not in st.session_state: st.session_state["role"] = "User"
-if "menu_selection" not in st.session_state: st.session_state["menu_selection"] = "📊 Bảng Điều khiển"
 if "edit_target_id" not in st.session_state: st.session_state["edit_target_id"] = ""
+# Biến quản lý Menu mượt mà
+if "menu_radio" not in st.session_state: st.session_state["menu_radio"] = "📊 Bảng Điều khiển"
 
 # ==========================================
 # MÀN HÌNH XÁC THỰC
@@ -83,7 +84,7 @@ if not st.session_state["logged_in"]:
                                     else:
                                         st.session_state["logged_in"] = True; st.session_state["ma_cbcc"] = user['ma_cbcc']
                                         st.session_state["ho_ten"] = user['ho_ten']; st.session_state["role"] = user['phan_quyen']
-                                        st.session_state["menu_selection"] = "📊 Bảng Điều khiển"
+                                        st.session_state["menu_radio"] = "📊 Bảng Điều khiển"
                                         st.rerun()
                                 else: st.error("❌ Sai mật khẩu!")
                             else: st.error("❌ Không tìm thấy Mã CBCC này!")
@@ -123,9 +124,11 @@ menu_options = ["📊 Bảng Điều khiển", "🔍 Tra cứu & Xem Hồ sơ", 
 if is_admin: 
     menu_options = ["📊 Bảng Điều khiển", "🛡️ Admin: Duyệt Tài khoản", "🔍 Tra cứu & Xem Hồ sơ", "➕ Admin: Cập nhật Hồ sơ (Tất cả)"]
 
-idx = menu_options.index(st.session_state["menu_selection"]) if st.session_state["menu_selection"] in menu_options else 0
-menu = st.sidebar.radio("📌 CHỨC NĂNG:", menu_options, index=idx)
-st.session_state["menu_selection"] = menu
+# Đảm bảo radio nhận đúng state
+if st.session_state["menu_radio"] not in menu_options:
+    st.session_state["menu_radio"] = menu_options[0]
+
+menu = st.sidebar.radio("📌 CHỨC NĂNG:", menu_options, key="menu_radio")
 st.sidebar.write("---")
 
 st.markdown('<div class="header-box"><h1>🗂️ QUẢN LÝ HỒ SƠ CÁN BỘ BAN TUYÊN GIÁO VÀ DÂN VẬN TỈNH ỦY TUYÊN QUANG</h1></div>', unsafe_allow_html=True)
@@ -160,31 +163,27 @@ if menu == "📊 Bảng Điều khiển":
         col_chart1, col_chart2 = st.columns(2)
         
         with col_chart1:
-            # Biểu đồ Cơ cấu Giới tính (Vòng xuyến - Donut)
             df_gt = df_hoso['gioi_tinh'].value_counts().reset_index()
             df_gt.columns = ['Giới tính', 'Số lượng']
             fig_gt = px.pie(df_gt, values='Số lượng', names='Giới tính', hole=0.5, title='Cơ cấu Giới tính', color='Giới tính', color_discrete_map={'Nam':'#004B87', 'Nữ':'#ff9900'})
             fig_gt.update_traces(textposition='inside', textinfo='percent+label')
             st.plotly_chart(fig_gt, use_container_width=True)
             
-            # Biểu đồ Ngạch hiện hưởng (Cột dọc)
             df_ng = df_hoso['ngach_cong_chuc'].value_counts().reset_index()
             df_ng.columns = ['Ngạch công chức', 'Số lượng']
             fig_ng = px.bar(df_ng, x='Ngạch công chức', y='Số lượng', title='Ngạch hiện hưởng', color_discrete_sequence=['#17a2b8'], text_auto=True)
             st.plotly_chart(fig_ng, use_container_width=True)
 
         with col_chart2:
-            # Biểu đồ Lý luận chính trị (Cột dọc)
             df_ll = df_hoso['ly_luan_chinh_tri'].value_counts().reset_index()
             df_ll.columns = ['Lý luận chính trị', 'Số lượng']
             fig_ll = px.bar(df_ll, x='Lý luận chính trị', y='Số lượng', title='Trình độ Lý luận Chính trị', color_discrete_sequence=['#C8102E'], text_auto=True)
             st.plotly_chart(fig_ll, use_container_width=True)
             
-            # Biểu đồ Trình độ chuyên môn (Cột ngang)
             df_cm = df_hoso['trinh_do_chuyen_mon'].value_counts().reset_index()
             df_cm.columns = ['Trình độ', 'Số lượng']
             fig_cm = px.bar(df_cm, y='Trình độ', x='Số lượng', orientation='h', title='Trình độ Chuyên môn', color_discrete_sequence=['#28a745'], text_auto=True)
-            fig_cm.update_layout(yaxis={'categoryorder':'total ascending'}) # Xếp từ ít đến nhiều
+            fig_cm.update_layout(yaxis={'categoryorder':'total ascending'})
             st.plotly_chart(fig_cm, use_container_width=True)
 
 # --- MODULE 2: ADMIN DUYỆT TÀI KHOẢN ---
@@ -217,36 +216,47 @@ elif menu == "🛡️ Admin: Duyệt Tài khoản":
 # --- MODULE 3: TRA CỨU HỒ SƠ ---
 elif menu == "🔍 Tra cứu & Xem Hồ sơ":
     st.markdown("### 🔍 TÌM KIẾM HỒ SƠ")
-    if df_hoso.empty: st.warning("📭 Dữ liệu đang trống.")
+    if df_hoso.empty: 
+        st.warning("📭 Dữ liệu đang trống.")
     else:
-        tu_khoa = st.text_input("Nhập Tên hoặc Mã CBCC để tìm kiếm:")
-        df_ket_qua = df_hoso[df_hoso.apply(lambda row: row.astype(str).str.contains(tu_khoa, case=False).any(), axis=1)] if tu_khoa else df_hoso
-        if not df_ket_qua.empty:
-            ds_hien_thi = df_ket_qua['ho_ten'] + " - " + df_ket_qua['chuc_vu'] + " (" + df_ket_qua['id'] + ")"
-            chon_nguoi = st.selectbox("👉 Chọn một đồng chí để xem Chi tiết:", ds_hien_thi.tolist())
-            if chon_nguoi:
-                ma_chon = chon_nguoi.split("(")[-1].replace(")", "")
-                info = df_hoso[df_hoso['id'] == ma_chon].iloc[0].fillna("")
+        # ẨN DANH SÁCH BẰNG CÁCH CHỜ NGƯỜI DÙNG NHẬP TEXT
+        tu_khoa = st.text_input("Nhập Tên hoặc Mã CBCC để tìm kiếm (Ấn Enter để xem):", placeholder="VD: CV01, Tuan...")
+        
+        if not tu_khoa.strip():
+            st.info("👆 Vui lòng nhập từ khóa (Tên hoặc Mã CBCC) và ấn Enter để tìm kiếm hồ sơ.")
+        else:
+            df_ket_qua = df_hoso[df_hoso.apply(lambda row: row.astype(str).str.contains(tu_khoa.strip(), case=False).any(), axis=1)]
+            
+            if df_ket_qua.empty:
+                st.warning("❌ Không tìm thấy cán bộ nào khớp với từ khóa!")
+            else:
+                ds_hien_thi = df_ket_qua['ho_ten'] + " - " + df_ket_qua['chuc_vu'] + " (" + df_ket_qua['id'] + ")"
+                chon_nguoi = st.selectbox("👉 Chọn một đồng chí để xem Chi tiết:", ds_hien_thi.tolist())
                 
-                if is_admin or info['id'] == st.session_state["ma_cbcc"]:
-                    if st.button("✏️ Chỉnh sửa Hồ sơ này"):
-                        st.session_state["edit_target_id"] = info['id']
-                        st.session_state["menu_selection"] = "➕ Admin: Cập nhật Hồ sơ (Tất cả)" if is_admin else "➕ Cập nhật Hồ sơ cá nhân"
-                        st.rerun()
+                if chon_nguoi:
+                    ma_chon = chon_nguoi.split("(")[-1].replace(")", "")
+                    info = df_hoso[df_hoso['id'] == ma_chon].iloc[0].fillna("")
+                    
+                    if is_admin or info['id'] == st.session_state["ma_cbcc"]:
+                        if st.button("✏️ Chỉnh sửa Hồ sơ này"):
+                            st.session_state["edit_target_id"] = info['id']
+                            # Ép Menu nhảy sang tab Cập nhật mượt mà
+                            st.session_state["menu_radio"] = "➕ Admin: Cập nhật Hồ sơ (Tất cả)" if is_admin else "➕ Cập nhật Hồ sơ cá nhân"
+                            st.rerun()
 
-                st.markdown(f"""<div class="profile-card"><div class="profile-name">{info['ho_ten']}</div><div class="profile-title">{info['chuc_vu']} | {info['don_vi']}</div><hr style="border-top: 1px dashed #dee2e6;"><div class="profile-info"><div><p><span class="info-label">Mã CBCC:</span> {info['id']}</p><p><span class="info-label">Ngày sinh:</span> {info['ngay_sinh']}</p><p><span class="info-label">Giới tính:</span> {info['gioi_tinh']}</p><p><span class="info-label">Quê quán:</span> {info['que_quan']}</p></div><div><p><span class="info-label">Ngạch:</span> {info['ngach_cong_chuc']}</p><p><span class="info-label">Chuyên môn:</span> {info['trinh_do_chuyen_mon']}</p><p><span class="info-label">Lý luận CT:</span> {info['ly_luan_chinh_tri']}</p><p><span class="info-label">Ngày vào Đảng:</span> {info['ngay_vao_dang']}</p></div></div></div>""", unsafe_allow_html=True)
-                
-                st.markdown("#### 📑 CÁC THÔNG TIN LIÊN QUAN")
-                t_ct, t_l, t_kt = st.tabs(["🏢 Lịch sử công tác", "💰 Diễn biến lương", "🏆 Khen thưởng & Kỷ luật"])
-                with t_ct:
-                    df_ct = pd.DataFrame(supabase.table("lich_su_cong_tac").select("tu_ngay, den_ngay, vi_tri, don_vi, quyet_dinh_so").eq("ma_cbcc", ma_chon).order("id").execute().data)
-                    if not df_ct.empty: st.table(df_ct.rename(columns={'tu_ngay':'Từ ngày', 'den_ngay':'Đến ngày', 'vi_tri':'Vị trí', 'don_vi':'Đơn vị', 'quyet_dinh_so':'Quyết định số'}))
-                with t_l:
-                    df_l = pd.DataFrame(supabase.table("dien_bien_luong").select("ngay_quyet_dinh, bac_luong, he_so, quyet_dinh_so").eq("ma_cbcc", ma_chon).order("id").execute().data)
-                    if not df_l.empty: st.table(df_l.rename(columns={'ngay_quyet_dinh':'Ngày QĐ', 'bac_luong':'Bậc lương', 'he_so':'Hệ số', 'quyet_dinh_so':'Quyết định số'}))
-                with t_kt:
-                    df_kt = pd.DataFrame(supabase.table("khen_thuong_ky_luat").select("ngay_quyet_dinh, loai, noi_dung, quyet_dinh_so").eq("ma_cbcc", ma_chon).order("id").execute().data)
-                    if not df_kt.empty: st.table(df_kt.rename(columns={'ngay_quyet_dinh':'Ngày QĐ', 'loai':'Loại', 'noi_dung':'Nội dung', 'quyet_dinh_so':'Quyết định số'}))
+                    st.markdown(f"""<div class="profile-card"><div class="profile-name">{info['ho_ten']}</div><div class="profile-title">{info['chuc_vu']} | {info['don_vi']}</div><hr style="border-top: 1px dashed #dee2e6;"><div class="profile-info"><div><p><span class="info-label">Mã CBCC:</span> {info['id']}</p><p><span class="info-label">Ngày sinh:</span> {info['ngay_sinh']}</p><p><span class="info-label">Giới tính:</span> {info['gioi_tinh']}</p><p><span class="info-label">Quê quán:</span> {info['que_quan']}</p></div><div><p><span class="info-label">Ngạch:</span> {info['ngach_cong_chuc']}</p><p><span class="info-label">Chuyên môn:</span> {info['trinh_do_chuyen_mon']}</p><p><span class="info-label">Lý luận CT:</span> {info['ly_luan_chinh_tri']}</p><p><span class="info-label">Ngày vào Đảng:</span> {info['ngay_vao_dang']}</p></div></div></div>""", unsafe_allow_html=True)
+                    
+                    st.markdown("#### 📑 CÁC THÔNG TIN LIÊN QUAN")
+                    t_ct, t_l, t_kt = st.tabs(["🏢 Lịch sử công tác", "💰 Diễn biến lương", "🏆 Khen thưởng & Kỷ luật"])
+                    with t_ct:
+                        df_ct = pd.DataFrame(supabase.table("lich_su_cong_tac").select("tu_ngay, den_ngay, vi_tri, don_vi, quyet_dinh_so").eq("ma_cbcc", ma_chon).order("id").execute().data)
+                        if not df_ct.empty: st.table(df_ct.rename(columns={'tu_ngay':'Từ ngày', 'den_ngay':'Đến ngày', 'vi_tri':'Vị trí', 'don_vi':'Đơn vị', 'quyet_dinh_so':'Quyết định số'}))
+                    with t_l:
+                        df_l = pd.DataFrame(supabase.table("dien_bien_luong").select("ngay_quyet_dinh, bac_luong, he_so, quyet_dinh_so").eq("ma_cbcc", ma_chon).order("id").execute().data)
+                        if not df_l.empty: st.table(df_l.rename(columns={'ngay_quyet_dinh':'Ngày QĐ', 'bac_luong':'Bậc lương', 'he_so':'Hệ số', 'quyet_dinh_so':'Quyết định số'}))
+                    with t_kt:
+                        df_kt = pd.DataFrame(supabase.table("khen_thuong_ky_luat").select("ngay_quyet_dinh, loai, noi_dung, quyet_dinh_so").eq("ma_cbcc", ma_chon).order("id").execute().data)
+                        if not df_kt.empty: st.table(df_kt.rename(columns={'ngay_quyet_dinh':'Ngày QĐ', 'loai':'Loại', 'noi_dung':'Nội dung', 'quyet_dinh_so':'Quyết định số'}))
 
 # --- MODULE 4: NHẬP LIỆU & CHỈNH SỬA TRỰC TIẾP ---
 elif menu in ["➕ Cập nhật Hồ sơ cá nhân", "➕ Admin: Cập nhật Hồ sơ (Tất cả)"]:
@@ -302,6 +312,7 @@ elif menu in ["➕ Cập nhật Hồ sơ cá nhân", "➕ Admin: Cập nhật H�
                 else:
                     data = {"id": target_id, "ho_ten": ho_ten.title(), "ngay_sinh": ngay_sinh, "gioi_tinh": gioi_tinh, "que_quan": que_quan, "don_vi": don_vi, "chuc_vu": chuc_vu, "ngach_cong_chuc": ngach, "trinh_do_chuyen_mon": chuyen_mon, "ly_luan_chinh_tri": ly_luan, "ngay_vao_dang": ngay_vao_dang}
                     supabase.table("ho_so_cbcc").upsert(data).execute()
+                    st.session_state["edit_target_id"] = ""
                     st.success("✅ Đã cập nhật Hồ sơ chính!"); st.cache_data.clear(); st.rerun()
 
     with tab_congtac:
