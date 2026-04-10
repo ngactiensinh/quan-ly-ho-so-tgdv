@@ -76,7 +76,7 @@ if "ma_cbcc" not in st.session_state: st.session_state["ma_cbcc"] = ""
 if "ho_ten" not in st.session_state: st.session_state["ho_ten"] = ""
 if "role" not in st.session_state: st.session_state["role"] = "User"
 if "edit_target_id" not in st.session_state: st.session_state["edit_target_id"] = ""
-if "menu_radio" not in st.session_state: st.session_state["menu_radio"] = ""
+if "menu_selection" not in st.session_state: st.session_state["menu_selection"] = ""
 
 # ==========================================
 # MÀN HÌNH XÁC THỰC
@@ -102,7 +102,7 @@ if not st.session_state["logged_in"]:
                                     else:
                                         st.session_state["logged_in"] = True; st.session_state["ma_cbcc"] = user['ma_cbcc']
                                         st.session_state["ho_ten"] = user['ho_ten']; st.session_state["role"] = user['phan_quyen']
-                                        st.session_state["menu_radio"] = "📊 Dashboard" if user['phan_quyen'] == 'Admin' else "🔍 Hồ sơ của tôi"
+                                        st.session_state["menu_selection"] = "📊 Dashboard" if user['phan_quyen'] == 'Admin' else "🔍 Hồ sơ của tôi"
                                         st.rerun()
                                 else: st.error("❌ Sai mật khẩu!")
                             else: st.error("❌ Không tìm thấy Mã CBCC này!")
@@ -134,22 +134,28 @@ st.sidebar.markdown(f"👋 Xin chào, **{st.session_state['ho_ten']}**")
 st.sidebar.markdown(f"🔑 Quyền: **{st.session_state['role']}**")
 
 if st.sidebar.button("🚪 Đăng xuất", use_container_width=True):
-    for key in ["logged_in", "ma_cbcc", "ho_ten", "role", "menu_radio"]: st.session_state[key] = None
+    for key in ["logged_in", "ma_cbcc", "ho_ten", "role", "menu_selection"]: st.session_state[key] = None
     st.rerun()
 
 is_admin = st.session_state["role"] == "Admin"
 if is_admin:
     menu_options = ["📊 Dashboard", "🛡️ Admin: Duyệt Tài khoản", "🔍 Tra cứu & Xem Hồ sơ", "➕ Admin: Cập nhật Hồ sơ (Tất cả)"]
 else:
-    # Nhân viên bình thường chỉ thấy 2 chức năng này, KHÔNG có Dashboard
     menu_options = ["🔍 Hồ sơ của tôi", "➕ Cập nhật Hồ sơ cá nhân"]
 
-if st.session_state["menu_radio"] not in menu_options:
-    st.session_state["menu_radio"] = menu_options[0]
+# Lấy đúng Index để Menu nhảy mượt mà không lỗi
+if st.session_state["menu_selection"] not in menu_options:
+    st.session_state["menu_selection"] = menu_options[0]
 
-menu = st.sidebar.radio("📌 CHỨC NĂNG:", menu_options, key="menu_radio")
+current_idx = menu_options.index(st.session_state["menu_selection"])
+menu = st.sidebar.radio("📌 CHỨC NĂNG:", menu_options, index=current_idx)
+
+# Đồng bộ khi người dùng click menu
+if menu != st.session_state["menu_selection"]:
+    st.session_state["menu_selection"] = menu
+    st.rerun()
+
 st.sidebar.write("---")
-
 st.markdown('<div class="header-box"><h1>🗂️ QUẢN LÝ HỒ SƠ CÁN BỘ BAN TUYÊN GIÁO VÀ DÂN VẬN TỈNH ỦY TUYÊN QUANG</h1></div>', unsafe_allow_html=True)
 
 @st.cache_data(ttl=5)
@@ -290,7 +296,6 @@ elif menu in ["🔍 Tra cứu & Xem Hồ sơ", "🔍 Hồ sơ của tôi"]:
     else:
         ma_chon = ""
         if is_admin:
-            # ADMIN CẦN GÕ MỚI TÌM RA
             tu_khoa = st.text_input("Nhập Tên hoặc Mã CBCC để tìm kiếm (Ấn Enter để xem):", placeholder="VD: CV01, Tuan...")
             if not tu_khoa.strip():
                 st.info("👆 Vui lòng nhập từ khóa và ấn Enter để tìm kiếm hồ sơ.")
@@ -302,31 +307,28 @@ elif menu in ["🔍 Tra cứu & Xem Hồ sơ", "🔍 Hồ sơ của tôi"]:
                     chon_nguoi = st.selectbox("👉 Chọn một đồng chí để xem Chi tiết:", ds_hien_thi.tolist())
                     if chon_nguoi: ma_chon = chon_nguoi.split("(")[-1].replace(")", "")
         else:
-            # NHÂN VIÊN TỰ HIỆN MÃ CỦA MÌNH
             ma_chon = st.session_state["ma_cbcc"]
             match = df_hoso[df_hoso['id'] == ma_chon]
             if match.empty:
                 st.warning("❌ Bạn chưa tạo hồ sơ. Vui lòng sang tab Cập nhật để điền thông tin!")
                 ma_chon = ""
 
-        # NẾU CÓ MÃ CHỌN -> HIỂN THỊ HỒ SƠ & NÚT XUẤT BẢN IN
         if ma_chon:
             info = df_hoso[df_hoso['id'] == ma_chon].iloc[0].fillna("")
             
+            # NÚT CHUYỂN TRANG KHÔNG BỊ LỖI
             if is_admin or info['id'] == st.session_state["ma_cbcc"]:
                 if st.button("✏️ Chỉnh sửa Hồ sơ này"):
                     st.session_state["edit_target_id"] = info['id']
-                    st.session_state["menu_radio"] = "➕ Admin: Cập nhật Hồ sơ (Tất cả)" if is_admin else "➕ Cập nhật Hồ sơ cá nhân"
+                    st.session_state["menu_selection"] = "➕ Admin: Cập nhật Hồ sơ (Tất cả)" if is_admin else "➕ Cập nhật Hồ sơ cá nhân"
                     st.rerun()
 
             st.markdown(f"""<div class="profile-card"><div class="profile-name">{info['ho_ten']}</div><div class="profile-title">{info['chuc_vu']} | {info['don_vi']}</div><hr style="border-top: 1px dashed #dee2e6;"><div class="profile-info"><div><p><span class="info-label">Mã CBCC:</span> {info['id']}</p><p><span class="info-label">Ngày sinh:</span> {info['ngay_sinh']}</p><p><span class="info-label">Giới tính:</span> {info['gioi_tinh']}</p><p><span class="info-label">Quê quán:</span> {info['que_quan']}</p></div><div><p><span class="info-label">Ngạch:</span> {info['ngach_cong_chuc']}</p><p><span class="info-label">Chuyên môn:</span> {info['trinh_do_chuyen_mon']}</p><p><span class="info-label">Lý luận CT:</span> {info['ly_luan_chinh_tri']}</p><p><span class="info-label">Ngày vào Đảng:</span> Kết nạp: {info.get('ngay_vao_dang','')} | Chính thức: {info.get('ngay_chinh_thuc','')}</p></div></div></div>""", unsafe_allow_html=True)
             
-            # Lấy data liên quan
             df_ct = pd.DataFrame(supabase.table("lich_su_cong_tac").select("tu_ngay, den_ngay, vi_tri, don_vi, quyet_dinh_so").eq("ma_cbcc", ma_chon).order("id").execute().data)
             df_l = pd.DataFrame(supabase.table("dien_bien_luong").select("ngay_quyet_dinh, bac_luong, he_so, quyet_dinh_so").eq("ma_cbcc", ma_chon).order("id").execute().data)
             df_kt = pd.DataFrame(supabase.table("khen_thuong_ky_luat").select("ngay_quyet_dinh, loai, noi_dung, quyet_dinh_so").eq("ma_cbcc", ma_chon).order("id").execute().data)
             
-            # TẠO NÚT TẢI SƠ YẾU LÝ LỊCH VÀNG CHÓE
             st.write("---")
             html_data = create_html_export(info, df_ct, df_l, df_kt)
             st.download_button(
