@@ -57,7 +57,6 @@ if "ma_cbcc" not in st.session_state: st.session_state["ma_cbcc"] = ""
 if "ho_ten" not in st.session_state: st.session_state["ho_ten"] = ""
 if "role" not in st.session_state: st.session_state["role"] = "User"
 if "edit_target_id" not in st.session_state: st.session_state["edit_target_id"] = ""
-# Biến quản lý Menu mượt mà
 if "menu_radio" not in st.session_state: st.session_state["menu_radio"] = "📊 Bảng Điều khiển"
 
 # ==========================================
@@ -124,7 +123,6 @@ menu_options = ["📊 Bảng Điều khiển", "🔍 Tra cứu & Xem Hồ sơ", 
 if is_admin: 
     menu_options = ["📊 Bảng Điều khiển", "🛡️ Admin: Duyệt Tài khoản", "🔍 Tra cứu & Xem Hồ sơ", "➕ Admin: Cập nhật Hồ sơ (Tất cả)"]
 
-# Đảm bảo radio nhận đúng state
 if st.session_state["menu_radio"] not in menu_options:
     st.session_state["menu_radio"] = menu_options[0]
 
@@ -151,7 +149,6 @@ if menu == "📊 Bảng Điều khiển":
     else:
         df_hoso.fillna("Chưa xác định", inplace=True)
         
-        # 1. Row Metrics
         c1, c2, c3, c4 = st.columns(4)
         c1.markdown(f'<div class="metric-container"><div class="metric-title">👥 Tổng số Cán bộ</div><div class="metric-value">{len(df_hoso)}</div></div>', unsafe_allow_html=True)
         c2.markdown(f'<div class="metric-container" style="border-color: #004B87;"><div class="metric-title">👨 Nam</div><div class="metric-value">{len(df_hoso[df_hoso["gioi_tinh"] == "Nam"])}</div></div>', unsafe_allow_html=True)
@@ -159,9 +156,7 @@ if menu == "📊 Bảng Điều khiển":
         c4.markdown(f'<div class="metric-container" style="border-color: #28a745;"><div class="metric-title">🎓 Thạc sĩ trở lên</div><div class="metric-value">{len(df_hoso[df_hoso["trinh_do_chuyen_mon"].str.contains("Thạc|Tiến", case=False, na=False)])}</div></div>', unsafe_allow_html=True)
         st.write("---")
         
-        # 2. Charts (2x2 Grid)
         col_chart1, col_chart2 = st.columns(2)
-        
         with col_chart1:
             df_gt = df_hoso['gioi_tinh'].value_counts().reset_index()
             df_gt.columns = ['Giới tính', 'Số lượng']
@@ -194,6 +189,7 @@ elif menu == "🛡️ Admin: Duyệt Tài khoản":
     else:
         df_tk = pd.DataFrame(tk_data)
         tab_cd, tab_hd = st.tabs(["⏳ Danh sách Chờ duyệt", "✅ Tài khoản đang Hoạt động"])
+        
         with tab_cd:
             df_choduyet = df_tk[df_tk['trang_thai'] == 'Chờ duyệt']
             if df_choduyet.empty: st.success("🎉 Không có yêu cầu nào đang chờ duyệt!")
@@ -201,17 +197,40 @@ elif menu == "🛡️ Admin: Duyệt Tài khoản":
                 for idx, row in df_choduyet.iterrows():
                     with st.expander(f"👤 {row['ho_ten']} ({row['ma_cbcc']})"):
                         st.write(f"**Chức vụ:** {row['chuc_vu']} | **Đơn vị:** {row['don_vi']}")
-                        if st.button("✅ DUYỆT TÀI KHOẢN NÀY", key=f"duyet_{row['ma_cbcc']}"):
+                        c_duyet, c_xoa = st.columns(2)
+                        if c_duyet.button("✅ DUYỆT TÀI KHOẢN", key=f"duyet_{row['ma_cbcc']}", use_container_width=True):
                             supabase.table("tai_khoan").update({"trang_thai": "Hoạt động"}).eq("ma_cbcc", row['ma_cbcc']).execute()
                             st.success("Đã duyệt!"); st.rerun()
+                        if c_xoa.button("❌ TỪ CHỐI & XÓA", key=f"xoa_cd_{row['ma_cbcc']}", use_container_width=True):
+                            supabase.table("tai_khoan").delete().eq("ma_cbcc", row['ma_cbcc']).execute()
+                            st.success("Đã xóa yêu cầu!"); st.rerun()
+                            
         with tab_hd:
             df_hoatdong = df_tk[df_tk['trang_thai'] == 'Hoạt động']
             st.dataframe(df_hoatdong[['ma_cbcc', 'ho_ten', 'chuc_vu', 'don_vi', 'phan_quyen']], hide_index=True)
-            st.markdown("#### 🔄 Chức năng Reset Mật khẩu")
-            rs_ma = st.selectbox("Chọn tài khoản cần Reset về 'Chuyenvien@2026':", df_hoatdong['ma_cbcc'] + " - " + df_hoatdong['ho_ten'])
-            if st.button("⚠️ XÁC NHẬN RESET"):
-                supabase.table("tai_khoan").update({"mat_khau": "Chuyenvien@2026"}).eq("ma_cbcc", rs_ma.split(" - ")[0]).execute()
-                st.success("✅ Đã reset thành công!")
+            
+            c_rs, c_del = st.columns(2)
+            ds_hd = (df_hoatdong['ma_cbcc'] + " - " + df_hoatdong['ho_ten']).tolist()
+            
+            with c_rs:
+                st.markdown("#### 🔄 Reset Mật khẩu")
+                rs_ma = st.selectbox("Chọn tài khoản cần Reset về 'Chuyenvien@2026':", ds_hd)
+                if st.button("⚠️ XÁC NHẬN RESET", use_container_width=True):
+                    supabase.table("tai_khoan").update({"mat_khau": "Chuyenvien@2026"}).eq("ma_cbcc", rs_ma.split(" - ")[0]).execute()
+                    st.success("✅ Đã reset thành công!")
+            
+            with c_del:
+                st.markdown("#### ❌ Xóa Tài khoản")
+                del_ma = st.selectbox("Chọn tài khoản cần XÓA VĨNH VIỄN:", ["-- Chọn --"] + ds_hd)
+                if st.button("🗑️ XÁC NHẬN XÓA TÀI KHOẢN", use_container_width=True):
+                    if del_ma != "-- Chọn --":
+                        ma_xoa = del_ma.split(" - ")[0]
+                        if ma_xoa == "ADMIN":
+                            st.error("⚠️ Phanh gấp sếp ơi! Không thể xóa tài khoản Admin gốc của hệ thống được đâu!")
+                        else:
+                            supabase.table("tai_khoan").delete().eq("ma_cbcc", ma_xoa).execute()
+                            st.success(f"✅ Đã xóa vĩnh viễn tài khoản {ma_xoa}!")
+                            st.rerun()
 
 # --- MODULE 3: TRA CỨU HỒ SƠ ---
 elif menu == "🔍 Tra cứu & Xem Hồ sơ":
@@ -219,7 +238,6 @@ elif menu == "🔍 Tra cứu & Xem Hồ sơ":
     if df_hoso.empty: 
         st.warning("📭 Dữ liệu đang trống.")
     else:
-        # ẨN DANH SÁCH BẰNG CÁCH CHỜ NGƯỜI DÙNG NHẬP TEXT
         tu_khoa = st.text_input("Nhập Tên hoặc Mã CBCC để tìm kiếm (Ấn Enter để xem):", placeholder="VD: CV01, Tuan...")
         
         if not tu_khoa.strip():
@@ -240,7 +258,6 @@ elif menu == "🔍 Tra cứu & Xem Hồ sơ":
                     if is_admin or info['id'] == st.session_state["ma_cbcc"]:
                         if st.button("✏️ Chỉnh sửa Hồ sơ này"):
                             st.session_state["edit_target_id"] = info['id']
-                            # Ép Menu nhảy sang tab Cập nhật mượt mà
                             st.session_state["menu_radio"] = "➕ Admin: Cập nhật Hồ sơ (Tất cả)" if is_admin else "➕ Cập nhật Hồ sơ cá nhân"
                             st.rerun()
 
