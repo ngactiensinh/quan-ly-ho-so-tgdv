@@ -119,7 +119,7 @@ if not st.session_state["logged_in"]:
     <div class="header-box">
         <div>{get_logo_html("70px")}</div>
         <div class="header-content">
-            <h1>HỆ THỐNG QUẢN LÝ HỒ SƠ TGDV</h1>
+            <h1>HỆ THỐNG QUẢN LÝ HỒ SƠ</h1>
             <p>BAN TUYÊN GIÁO VÀ DÂN VẬN TỈNH ỦY TUYÊN QUANG</p>
         </div>
     </div>
