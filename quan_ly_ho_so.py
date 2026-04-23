@@ -15,7 +15,7 @@ SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 
 try:
     supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
-except:
+except Exception:
     pass
 
 # ==========================================
@@ -207,13 +207,13 @@ st.markdown(f"""
 @st.cache_data(ttl=5)
 def load_profiles():
     try: return pd.DataFrame(supabase.table("ho_so_cbcc").select("*").execute().data)
-    except: return pd.DataFrame()
+    except Exception: return pd.DataFrame()
 
 df_hoso = load_profiles()
 
 def get_idx(lst, val):
     try: return lst.index(val)
-    except: return 0
+    except Exception: return 0
 
 # HÀM TẠO FILE XUẤT HTML BẢN IN ĐẸP
 def create_html_export(info, df_ct, df_l, df_kt, df_gd):
@@ -221,7 +221,6 @@ def create_html_export(info, df_ct, df_l, df_kt, df_gd):
     tbl_l = df_l.rename(columns={'ngay_quyet_dinh':'Ngày QĐ', 'bac_luong':'Bậc lương', 'he_so':'Hệ số', 'quyet_dinh_so':'Quyết định số'}).drop(columns=['id', 'ma_cbcc'], errors='ignore').to_html(index=False, border=1) if not df_l.empty else "<p>Chưa có dữ liệu.</p>"
     tbl_kt = df_kt.rename(columns={'ngay_quyet_dinh':'Ngày QĐ', 'loai':'Loại', 'noi_dung':'Nội dung', 'quyet_dinh_so':'Quyết định số'}).drop(columns=['id', 'ma_cbcc'], errors='ignore').to_html(index=False, border=1) if not df_kt.empty else "<p>Chưa có dữ liệu.</p>"
     
-    # Bảng Quan hệ gia đình xử lý gộp 3 cột (Quê quán, Nghề nghiệp, Nơi ở) thành các gạch đầu dòng để in ra cho gọn
     if not df_gd.empty:
         df_gd_print = df_gd.copy()
         df_gd_print['Thông tin khác'] = df_gd_print.apply(lambda x: f"- Quê quán: {x.get('que_quan_gd', '')}<br>- Nghề nghiệp: {x.get('nghe_nghiep_gd', '')}<br>- Nơi ở: {x.get('noi_o_gd', '')}", axis=1)
@@ -384,7 +383,7 @@ elif menu in ["🔍 Tra cứu & Xem Hồ sơ", "🔍 Hồ sơ của tôi"]:
             df_kt = pd.DataFrame(supabase.table("khen_thuong_ky_luat").select("ngay_quyet_dinh, loai, noi_dung, quyet_dinh_so").eq("ma_cbcc", ma_chon).order("id").execute().data)
             
             try: df_gd = pd.DataFrame(supabase.table("quan_he_gia_dinh").select("*").eq("ma_cbcc", ma_chon).order("loai_quan_he").execute().data)
-            except: df_gd = pd.DataFrame()
+            except Exception: df_gd = pd.DataFrame()
             
             st.write("---")
             html_data = create_html_export(info, df_ct, df_l, df_kt, df_gd)
@@ -411,8 +410,8 @@ elif menu in ["🔍 Tra cứu & Xem Hồ sơ", "🔍 Hồ sơ của tôi"]:
                 else: st.info("Chưa có dữ liệu.")
             with t_gd:
                 if not df_gd.empty: 
-                    # Hiển thị bảng gia đình gỡ bỏ các cột rác và đổi tên cột tiếng Việt
-                    df_gd_show = df_gd.drop(columns=['id', 'ma_cbcc', 'thong_tin_khac'], errors='ignore').rename(columns={
+                    # Hiển thị bảng gia đình gỡ bỏ các cột hệ thống và đổi tên cột tiếng Việt
+                    df_gd_show = df_gd.drop(columns=['id', 'ma_cbcc', 'created_at', 'thong_tin_khac'], errors='ignore').rename(columns={
                         'loai_quan_he':'Phân loại', 'quan_he':'Quan hệ', 'ho_ten':'Họ Tên', 'nam_sinh':'Năm sinh', 
                         'que_quan_gd':'Quê quán', 'nghe_nghiep_gd':'Nghề nghiệp/Công tác', 'noi_o_gd':'Nơi ở hiện nay'
                     })
@@ -491,7 +490,7 @@ elif menu in ["➕ Cập nhật Hồ sơ cá nhân", "➕ Admin: Cập nhật H�
         st.markdown("#### 🔧 Nhấp đúp vào bảng để chỉnh sửa Dữ liệu cũ")
         df_ct = pd.DataFrame(supabase.table("lich_su_cong_tac").select("*").eq("ma_cbcc", target_id).order("id").execute().data)
         if not df_ct.empty:
-            edited_ct = st.data_editor(df_ct.drop(columns=['ma_cbcc']), hide_index=True, use_container_width=True, disabled=["id"])
+            edited_ct = st.data_editor(df_ct.drop(columns=['ma_cbcc', 'created_at'], errors='ignore'), hide_index=True, use_container_width=True, disabled=["id"])
             col_save1, col_del1 = st.columns([3, 1])
             if col_save1.button("💾 LƯU CẬP NHẬT BẢNG CÔNG TÁC", use_container_width=True):
                 update_data = edited_ct.copy()
@@ -513,7 +512,7 @@ elif menu in ["➕ Cập nhật Hồ sơ cá nhân", "➕ Admin: Cập nhật H�
         st.markdown("#### 🔧 Nhấp đúp vào bảng để chỉnh sửa Dữ liệu cũ")
         df_l = pd.DataFrame(supabase.table("dien_bien_luong").select("*").eq("ma_cbcc", target_id).order("id").execute().data)
         if not df_l.empty:
-            edited_l = st.data_editor(df_l.drop(columns=['ma_cbcc']), hide_index=True, use_container_width=True, disabled=["id"])
+            edited_l = st.data_editor(df_l.drop(columns=['ma_cbcc', 'created_at'], errors='ignore'), hide_index=True, use_container_width=True, disabled=["id"])
             col_save2, col_del2 = st.columns([3, 1])
             if col_save2.button("💾 LƯU CẬP NHẬT BẢNG LƯƠNG", use_container_width=True):
                 update_data = edited_l.copy()
@@ -535,7 +534,7 @@ elif menu in ["➕ Cập nhật Hồ sơ cá nhân", "➕ Admin: Cập nhật H�
         st.markdown("#### 🔧 Nhấp đúp vào bảng để chỉnh sửa Dữ liệu cũ")
         df_kt = pd.DataFrame(supabase.table("khen_thuong_ky_luat").select("*").eq("ma_cbcc", target_id).order("id").execute().data)
         if not df_kt.empty:
-            edited_kt = st.data_editor(df_kt.drop(columns=['ma_cbcc']), hide_index=True, use_container_width=True, disabled=["id"])
+            edited_kt = st.data_editor(df_kt.drop(columns=['ma_cbcc', 'created_at'], errors='ignore'), hide_index=True, use_container_width=True, disabled=["id"])
             col_save3, col_del3 = st.columns([3, 1])
             if col_save3.button("💾 LƯU CẬP NHẬT BẢNG KHEN THƯỞNG", use_container_width=True):
                 update_data = edited_kt.copy()
@@ -577,8 +576,8 @@ elif menu in ["➕ Cập nhật Hồ sơ cá nhân", "➕ Admin: Cập nhật H�
         try:
             df_gd = pd.DataFrame(supabase.table("quan_he_gia_dinh").select("*").eq("ma_cbcc", target_id).order("loai_quan_he").execute().data)
             if not df_gd.empty:
-                # Ẩn cột thong_tin_khac cũ đi để bảng hiển thị đẹp, dễ nhìn
-                df_gd_edit = df_gd.drop(columns=['thong_tin_khac'], errors='ignore')
+                # Ẩn cột thong_tin_khac cũ và created_at đi để bảng hiển thị đẹp, dễ nhìn
+                df_gd_edit = df_gd.drop(columns=['thong_tin_khac', 'created_at'], errors='ignore')
                 edited_gd = st.data_editor(df_gd_edit.drop(columns=['ma_cbcc']), hide_index=True, use_container_width=True, disabled=["id"])
                 col_save4, col_del4 = st.columns([3, 1])
                 if col_save4.button("💾 LƯU CẬP NHẬT BẢNG GIA ĐÌNH", use_container_width=True):
@@ -588,5 +587,5 @@ elif menu in ["➕ Cập nhật Hồ sơ cá nhân", "➕ Admin: Cập nhật H�
                 del_gd = col_del4.selectbox("Hoặc chọn ID để xóa:", ["-- Chọn --"] + df_gd['id'].astype(str).tolist(), key="sb_l4", label_visibility="collapsed")
                 if col_del4.button("🗑️ XÓA", key="btn_del4", use_container_width=True) and del_gd != "-- Chọn --":
                     supabase.table("quan_he_gia_dinh").delete().eq("id", del_gd).execute(); st.rerun()
-        except:
-            st.warning("⚠️ Bảng 'quan_he_gia_dinh' chưa có đầy đủ các cột. Hãy vào Supabase thêm cột nhé!")
+        except Exception as e:
+            st.warning(f"⚠️ Không thể tải dữ liệu gia đình. Vui lòng kiểm tra lại cấu trúc bảng trên Supabase. Lỗi: {e}")
