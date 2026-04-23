@@ -222,39 +222,122 @@ def get_idx(lst, val):
     try: return lst.index(val)
     except: return 0
 
-# HÀM TẠO FILE XUẤT HTML BẢN IN ĐẸP
+# ==========================================
+# HÀM XUẤT SƠ YẾU LÝ LỊCH CHUẨN MẪU 2C/TCTW-98
+# ==========================================
 def create_html_export(info, df_ct, df_l, df_kt):
-    tbl_ct = df_ct.rename(columns={'tu_ngay':'Từ ngày', 'den_ngay':'Đến ngày', 'vi_tri':'Vị trí', 'don_vi':'Đơn vị', 'quyet_dinh_so':'Quyết định số'}).drop(columns=['id', 'ma_cbcc'], errors='ignore').to_html(index=False, border=1) if not df_ct.empty else "<p>Chưa có dữ liệu.</p>"
-    tbl_l = df_l.rename(columns={'ngay_quyet_dinh':'Ngày QĐ', 'bac_luong':'Bậc lương', 'he_so':'Hệ số', 'quyet_dinh_so':'Quyết định số'}).drop(columns=['id', 'ma_cbcc'], errors='ignore').to_html(index=False, border=1) if not df_l.empty else "<p>Chưa có dữ liệu.</p>"
-    tbl_kt = df_kt.rename(columns={'ngay_quyet_dinh':'Ngày QĐ', 'loai':'Loại', 'noi_dung':'Nội dung', 'quyet_dinh_so':'Quyết định số'}).drop(columns=['id', 'ma_cbcc'], errors='ignore').to_html(index=False, border=1) if not df_kt.empty else "<p>Chưa có dữ liệu.</p>"
-    
+    # Format Lịch sử công tác
+    tr_cong_tac = ""
+    if not df_ct.empty:
+        for _, row in df_ct.iterrows():
+            tr_cong_tac += f"<tr><td>{row['tu_ngay']} - {row['den_ngay']}</td><td>{row['vi_tri']}, {row['don_vi']} (QĐ: {row.get('quyet_dinh_so', '')})</td></tr>"
+    else:
+        tr_cong_tac = "<tr><td style='height:30px;'></td><td></td></tr><tr><td style='height:30px;'></td><td></td></tr>"
+
+    # Format Khen thưởng / Kỷ luật
+    khen_thuong = ", ".join(df_kt[df_kt['loai'] == 'Khen thưởng']['noi_dung'].tolist()) if not df_kt.empty and 'Khen thưởng' in df_kt['loai'].values else "......................................................................................"
+    ky_luat = ", ".join(df_kt[df_kt['loai'] == 'Kỷ luật']['noi_dung'].tolist()) if not df_kt.empty and 'Kỷ luật' in df_kt['loai'].values else "......................................................................................"
+
+    # Diễn biến lương mới nhất
+    bac_luong, he_so = "......", "......"
+    if not df_l.empty:
+        last_luong = df_l.iloc[-1]
+        bac_luong = last_luong.get('bac_luong', '......')
+        he_so = last_luong.get('he_so', '......')
+
     html = f"""
-    <html><head><meta charset="utf-8"><title>Hồ sơ {info['ho_ten']}</title>
+    <html><head><meta charset="utf-8"><title>Sơ yếu lý lịch 2C - {info['ho_ten']}</title>
     <style>
-        body {{ font-family: 'Times New Roman', serif; line-height: 1.6; padding: 40px; max-width: 800px; margin: auto; color: black; font-size: 16px;}}
-        h2 {{ text-align: center; margin-bottom: 5px; font-size: 22px; text-transform: uppercase;}}
-        h3 {{ text-align: center; margin-top: 0; font-weight: normal; font-size: 18px; margin-bottom: 30px;}}
-        h4 {{ color: #000; border-bottom: 1px solid #000; padding-bottom: 5px; text-transform: uppercase; margin-top:30px;}}
-        table {{ width: 100%; border-collapse: collapse; margin-top: 10px; margin-bottom: 20px; }}
-        th, td {{ border: 1px solid black; padding: 8px; text-align: left; }}
-        th {{ background-color: #f2f2f2; }}
+        body {{ font-family: 'Times New Roman', serif; line-height: 1.6; max-width: 800px; margin: 0 auto; padding: 20px; font-size: 15px; color: black; }}
+        .header-table {{ width: 100%; border: none; margin-bottom: 20px; }}
+        .header-table td {{ border: none; padding: 0; vertical-align: top; }}
+        h2 {{ text-align: center; font-size: 22px; margin: 10px 0 0 0; font-weight: bold; }}
+        .photo-box {{ width: 4cm; height: 6cm; border: 1px solid black; text-align: center; vertical-align: middle; display: inline-block; line-height: 6cm; font-style: italic;}}
+        table.bordered {{ width: 100%; border-collapse: collapse; margin-top: 5px; margin-bottom: 15px; }}
+        table.bordered th, table.bordered td {{ border: 1px solid black; padding: 6px; text-align: left; vertical-align: top; }}
+        table.bordered th {{text-align: center; font-weight: normal;}}
+        .row-item {{ margin-bottom: 8px; text-align: justify;}}
     </style></head><body>
-        <h2>SƠ YẾU LÝ LỊCH CÁN BỘ, CÔNG CHỨC</h2>
-        <h3>Đơn vị: {info.get('don_vi', '')}</h3>
-        <h4>I. THÔNG TIN CHUNG</h4>
-        <p><b>1. Họ và tên:</b> <span style="text-transform: uppercase;">{info['ho_ten']}</span></p>
-        <p><b>2. Mã CBCC:</b> {info['id']}</p>
-        <p><b>3. Ngày sinh:</b> {info.get('ngay_sinh', '')}</p>
-        <p><b>4. Giới tính:</b> {info.get('gioi_tinh', '')}</p>
-        <p><b>5. Quê quán:</b> {info.get('que_quan', '')}</p>
-        <p><b>6. Chức vụ:</b> {info.get('chuc_vu', '')}</p>
-        <p><b>7. Ngạch công chức:</b> {info.get('ngach_cong_chuc', '')}</p>
-        <p><b>8. Trình độ chuyên môn:</b> {info.get('trinh_do_chuyen_mon', '')}</p>
-        <p><b>9. Lý luận chính trị:</b> {info.get('ly_luan_chinh_tri', '')}</p>
-        <p><b>10. Ngày vào Đảng:</b> Kết nạp: {info.get('ngay_vao_dang', '')} | Chính thức: {info.get('ngay_chinh_thuc', '')}</p>
-        <h4>II. LỊCH SỬ CÔNG TÁC</h4>{tbl_ct}
-        <h4>III. DIỄN BIẾN LƯƠNG</h4>{tbl_l}
-        <h4>IV. KHEN THƯỞNG / KỶ LUẬT</h4>{tbl_kt}
+
+    <table class="header-table">
+        <tr>
+            <td style="width: 40%;">
+                <div style="text-align: center;">Tỉnh: <b>TUYÊN QUANG</b></div>
+                <div style="text-align: center;">Đơn vị: <b>BAN TUYÊN GIÁO VÀ DÂN VẬN</b></div>
+            </td>
+            <td style="width: 60%; text-align: right;">
+                <div><b>Mẫu 2C/TCTW-98</b></div>
+                <div>Số hiệu cán bộ, công chức: <b>{info['id']}</b></div>
+            </td>
+        </tr>
+    </table>
+
+    <h2>SƠ YẾU LÝ LỊCH CÁN BỘ, CÔNG CHỨC</h2>
+    <br>
+
+    <table class="header-table">
+        <tr>
+            <td style="width: 25%; text-align: center; padding-right: 20px;">
+                <div class="photo-box">Ảnh 4x6</div>
+            </td>
+            <td style="width: 75%;">
+                <div class="row-item">1) Họ và tên khai sinh: <b><span style="text-transform: uppercase; font-size: 17px;">{info['ho_ten']}</span></b> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Nam, nữ: <b>{info.get('gioi_tinh', '.........')}</b></div>
+                <div class="row-item">2) Các tên gọi khác: .............................................................................................................</div>
+                <div class="row-item">3) Cấp ủy hiện tại: ......................................., Cấp ủy kiêm: ............................................</div>
+                <div class="row-item">Chức vụ (Đảng, chính quyền, đoàn thể): <b>{info.get('chuc_vu', '...................................................')}</b></div>
+                <div class="row-item">Phụ cấp chức vụ: ....................................</div>
+                <div class="row-item">4) Sinh ngày: <b>{info.get('ngay_sinh', '..../..../........')}</b></div>
+                <div class="row-item">5) Nơi sinh: ............................................................................................................................</div>
+                <div class="row-item">6) Quê quán: <b>{info.get('que_quan', '........................................................................................................')}</b></div>
+            </td>
+        </tr>
+    </table>
+
+    <div class="row-item">7) Nơi ở hiện nay: ........................................................................................................................................................................</div>
+    <div class="row-item">8) Dân tộc: ....................................................., 9) Tôn giáo: .....................................................</div>
+    <div class="row-item">10) Thành phần gia đình xuất thân: ........................................................................................................................................</div>
+    <div class="row-item">11) Nghề nghiệp bản thân trước khi được tuyển dụng: .....................................................................................................</div>
+    <div class="row-item">12) Ngày được tuyển dụng: ...../...../........., Vào cơ quan nào, ở đâu: ..............................................................................</div>
+    <div class="row-item">13) Ngày vào cơ quan hiện đang công tác: ...../...../........., Ngày tham gia cách mạng: ...../...../.........</div>
+    <div class="row-item">14) Ngày vào Đảng Cộng sản Việt Nam: <b>{info.get('ngay_vao_dang', '..../..../........')}</b>, Ngày chính thức: <b>{info.get('ngay_chinh_thuc', '..../..../........')}</b></div>
+    <div class="row-item">15) Ngày tham gia các tổ chức chính trị, xã hội: ...............................................................................................................</div>
+    <div class="row-item">16) Ngày nhập ngũ: ...../...../........., Ngày xuất ngũ: ...../...../........., Quân hàm cao nhất: ..............................................</div>
+    <div class="row-item">17) Trình độ học vấn: Giáo dục phổ thông: .........................., Học hàm, học vị cao nhất: <b>{info.get('trinh_do_chuyen_mon', '.........................')}</b></div>
+    <div class="row-item">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Lý luận chính trị: <b>{info.get('ly_luan_chinh_tri', '................................')}</b>, Ngoại ngữ: ...................................................................</div>
+    <div class="row-item">18) Công tác chính đang làm: <b>{info.get('chuc_vu', '........................................................................................')}</b></div>
+    <div class="row-item">19) Ngạch công chức: <b>{info.get('ngach_cong_chuc', '.........................')}</b>, Bậc lương: <b>{bac_luong}</b>, Hệ số: <b>{he_so}</b></div>
+    <div class="row-item">20) Danh hiệu được phong tặng: ............................................................................................................................................</div>
+    <div class="row-item">21) Sở trường công tác: ........................................................................................................................................................</div>
+    <div class="row-item">22) Khen thưởng: <b>{khen_thuong}</b></div>
+    <div class="row-item">23) Kỷ luật: <b>{ky_luat}</b></div>
+    <div class="row-item">24) Tình trạng sức khỏe: .............................................., Chiều cao: ................., Cân nặng: .........., Nhóm máu: ...............</div>
+    <div class="row-item">25) Số chứng minh nhân dân: .............................................., Thương binh loại: .................., Gia đình liệt sĩ: .............</div>
+    
+    <br>
+    <div class="row-item"><b>27) TÓM TẮT QUÁ TRÌNH CÔNG TÁC</b></div>
+    <table class="bordered">
+        <tr>
+            <th style="width: 30%;">Từ tháng, năm<br>đến tháng, năm</th>
+            <th style="width: 70%;">Chức danh, chức vụ, đơn vị công tác<br>(Đảng, Chính quyền, Đoàn thể)</th>
+        </tr>
+        {tr_cong_tac}
+    </table>
+
+    <div class="row-item" style="font-size: 13px;"><i>(Lưu ý: Các mục 26, 28, 29, 30, 31 do đặc thù riêng, vui lòng kê khai bổ sung theo đúng trang 3,4 của Mẫu 2C/TCTW-98 sau khi in phôi này)</i></div>
+    <br>
+
+    <table class="header-table" style="margin-top: 30px;">
+        <tr>
+            <td style="width: 50%; text-align: center;">
+                <p><b>Xác nhận của cơ quan quản lý</b><br><i>(Ký tên, đóng dấu)</i></p>
+            </td>
+            <td style="width: 50%; text-align: center;">
+                <p><i>..........., Ngày ...... tháng ...... năm 20......</i><br><b>Người khai</b><br><i>Tôi xin cam đoan những lời khai trên là đúng sự thật</i><br>(Ký tên)</p>
+                <br><br><br><br>
+                <p><b>{info['ho_ten']}</b></p>
+            </td>
+        </tr>
+    </table>
     </body></html>
     """
     return html.encode('utf-8')
