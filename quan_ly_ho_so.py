@@ -22,14 +22,12 @@ except:
 # HÀM XỬ LÝ LOGO (TỰ ĐỘNG LẤY ẢNH LOCAL HOẶC WEB)
 # ==========================================
 def get_logo_html(height="80px"):
-    # Tìm file logo.png trong thư mục, nếu không có thì lấy link mạng
     logo_path = "logo.png"
     if os.path.exists(logo_path):
         with open(logo_path, "rb") as f:
             data = base64.b64encode(f.read()).decode("utf-8")
             return f'<img src="data:image/png;base64,{data}" style="height: {height};">'
     else:
-        # Link Quốc huy dự phòng
         url = "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/Qu%E1%BB%91c_huy_Vi%E1%BB%87t_Nam.svg/250px-Qu%E1%BB%91c_huy_Vi%E1%BB%87t_Nam.svg.png"
         return f'<img src="{url}" style="height: {height};">'
 
@@ -79,7 +77,6 @@ st.markdown("""
     .profile-info { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; font-size: 15px;}
     .info-label { color: #495057; font-weight: bold; }
     
-    /* Thiết kế Header chứa Logo mới */
     .header-box { 
         background-color: #004B87; 
         padding: 15px 30px; 
@@ -103,7 +100,6 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Khởi tạo Session State
 if "logged_in" not in st.session_state: st.session_state["logged_in"] = False
 if "ma_cbcc" not in st.session_state: st.session_state["ma_cbcc"] = ""
 if "ho_ten" not in st.session_state: st.session_state["ho_ten"] = ""
@@ -172,9 +168,7 @@ if not st.session_state["logged_in"]:
 # ==========================================
 # GIAO DIỆN CHÍNH
 # ==========================================
-# Chèn Logo lên thanh Sidebar
 st.sidebar.markdown(f"<div style='text-align: center; margin-bottom: 20px;'>{get_logo_html('100px')}</div>", unsafe_allow_html=True)
-
 st.sidebar.markdown(f"👋 Xin chào, **{st.session_state['ho_ten']}**")
 st.sidebar.markdown(f"🔑 Quyền: **{st.session_state['role']}**")
 
@@ -200,7 +194,6 @@ if menu != st.session_state["menu_selection"]:
 
 st.sidebar.write("---")
 
-# Header chính có gắn Logo
 st.markdown(f"""
 <div class="header-box">
     <div>{get_logo_html("60px")}</div>
@@ -222,14 +215,19 @@ def get_idx(lst, val):
     try: return lst.index(val)
     except: return 0
 
-# HÀM TẠO FILE XUẤT HTML BẢN IN ĐẸP (BẢN GỐC + QUAN HỆ GIA ĐÌNH)
+# HÀM TẠO FILE XUẤT HTML BẢN IN ĐẸP
 def create_html_export(info, df_ct, df_l, df_kt, df_gd):
     tbl_ct = df_ct.rename(columns={'tu_ngay':'Từ ngày', 'den_ngay':'Đến ngày', 'vi_tri':'Vị trí', 'don_vi':'Đơn vị', 'quyet_dinh_so':'Quyết định số'}).drop(columns=['id', 'ma_cbcc'], errors='ignore').to_html(index=False, border=1) if not df_ct.empty else "<p>Chưa có dữ liệu.</p>"
     tbl_l = df_l.rename(columns={'ngay_quyet_dinh':'Ngày QĐ', 'bac_luong':'Bậc lương', 'he_so':'Hệ số', 'quyet_dinh_so':'Quyết định số'}).drop(columns=['id', 'ma_cbcc'], errors='ignore').to_html(index=False, border=1) if not df_l.empty else "<p>Chưa có dữ liệu.</p>"
     tbl_kt = df_kt.rename(columns={'ngay_quyet_dinh':'Ngày QĐ', 'loai':'Loại', 'noi_dung':'Nội dung', 'quyet_dinh_so':'Quyết định số'}).drop(columns=['id', 'ma_cbcc'], errors='ignore').to_html(index=False, border=1) if not df_kt.empty else "<p>Chưa có dữ liệu.</p>"
     
-    # Bảng Quan hệ gia đình mới
-    tbl_gd = df_gd.rename(columns={'loai_quan_he':'Phân loại', 'quan_he':'Quan hệ', 'ho_ten':'Họ và tên', 'nam_sinh':'Năm sinh', 'thong_tin_khac':'Thông tin khác'}).drop(columns=['id', 'ma_cbcc'], errors='ignore').to_html(index=False, border=1) if not df_gd.empty else "<p>Chưa có dữ liệu.</p>"
+    # Bảng Quan hệ gia đình xử lý gộp 3 cột (Quê quán, Nghề nghiệp, Nơi ở) thành các gạch đầu dòng để in ra cho gọn
+    if not df_gd.empty:
+        df_gd_print = df_gd.copy()
+        df_gd_print['Thông tin khác'] = df_gd_print.apply(lambda x: f"- Quê quán: {x.get('que_quan_gd', '')}<br>- Nghề nghiệp: {x.get('nghe_nghiep_gd', '')}<br>- Nơi ở: {x.get('noi_o_gd', '')}", axis=1)
+        tbl_gd = df_gd_print[['loai_quan_he', 'quan_he', 'ho_ten', 'nam_sinh', 'Thông tin khác']].rename(columns={'loai_quan_he':'Phân loại', 'quan_he':'Quan hệ', 'ho_ten':'Họ và tên', 'nam_sinh':'Năm sinh'}).to_html(index=False, border=1, escape=False)
+    else:
+        tbl_gd = "<p>Chưa có dữ liệu.</p>"
     
     html = f"""
     <html><head><meta charset="utf-8"><title>Hồ sơ {info['ho_ten']}</title>
@@ -239,7 +237,7 @@ def create_html_export(info, df_ct, df_l, df_kt, df_gd):
         h3 {{ text-align: center; margin-top: 0; font-weight: normal; font-size: 18px; margin-bottom: 30px;}}
         h4 {{ color: #000; border-bottom: 1px solid #000; padding-bottom: 5px; text-transform: uppercase; margin-top:30px;}}
         table {{ width: 100%; border-collapse: collapse; margin-top: 10px; margin-bottom: 20px; }}
-        th, td {{ border: 1px solid black; padding: 8px; text-align: left; }}
+        th, td {{ border: 1px solid black; padding: 8px; text-align: left; vertical-align: top; }}
         th {{ background-color: #f2f2f2; }}
     </style></head><body>
         <h2>SƠ YẾU LÝ LỊCH CÁN BỘ, CÔNG CHỨC</h2>
@@ -384,6 +382,7 @@ elif menu in ["🔍 Tra cứu & Xem Hồ sơ", "🔍 Hồ sơ của tôi"]:
             df_ct = pd.DataFrame(supabase.table("lich_su_cong_tac").select("tu_ngay, den_ngay, vi_tri, don_vi, quyet_dinh_so").eq("ma_cbcc", ma_chon).order("id").execute().data)
             df_l = pd.DataFrame(supabase.table("dien_bien_luong").select("ngay_quyet_dinh, bac_luong, he_so, quyet_dinh_so").eq("ma_cbcc", ma_chon).order("id").execute().data)
             df_kt = pd.DataFrame(supabase.table("khen_thuong_ky_luat").select("ngay_quyet_dinh, loai, noi_dung, quyet_dinh_so").eq("ma_cbcc", ma_chon).order("id").execute().data)
+            
             try: df_gd = pd.DataFrame(supabase.table("quan_he_gia_dinh").select("*").eq("ma_cbcc", ma_chon).order("loai_quan_he").execute().data)
             except: df_gd = pd.DataFrame()
             
@@ -411,8 +410,14 @@ elif menu in ["🔍 Tra cứu & Xem Hồ sơ", "🔍 Hồ sơ của tôi"]:
                 if not df_kt.empty: st.table(df_kt.rename(columns={'ngay_quyet_dinh':'Ngày QĐ', 'loai':'Loại', 'noi_dung':'Nội dung', 'quyet_dinh_so':'Quyết định số'}))
                 else: st.info("Chưa có dữ liệu.")
             with t_gd:
-                if not df_gd.empty: st.table(df_gd.drop(columns=['id', 'ma_cbcc'], errors='ignore').rename(columns={'loai_quan_he':'Phân loại', 'quan_he':'Quan hệ', 'ho_ten':'Họ Tên', 'nam_sinh':'Năm sinh', 'thong_tin_khac':'Thông tin khác'}))
-                else: st.info("Chưa có dữ liệu.")
+                if not df_gd.empty: 
+                    # Hiển thị bảng gia đình gỡ bỏ các cột rác và đổi tên cột tiếng Việt
+                    df_gd_show = df_gd.drop(columns=['id', 'ma_cbcc', 'thong_tin_khac'], errors='ignore').rename(columns={
+                        'loai_quan_he':'Phân loại', 'quan_he':'Quan hệ', 'ho_ten':'Họ Tên', 'nam_sinh':'Năm sinh', 
+                        'que_quan_gd':'Quê quán', 'nghe_nghiep_gd':'Nghề nghiệp/Công tác', 'noi_o_gd':'Nơi ở hiện nay'
+                    })
+                    st.table(df_gd_show)
+                else: st.info("Chưa có dữ liệu thân nhân.")
 
 # --- MODULE 4: NHẬP LIỆU & CHỈNH SỬA TRỰC TIẾP ---
 elif menu in ["➕ Cập nhật Hồ sơ cá nhân", "➕ Admin: Cập nhật Hồ sơ (Tất cả)"]:
@@ -551,23 +556,30 @@ elif menu in ["➕ Cập nhật Hồ sơ cá nhân", "➕ Admin: Cập nhật H�
             
             c4, c5 = st.columns([1, 3])
             nam_sinh_gd = c4.text_input("Năm sinh")
-            thong_tin_gd = c5.text_input("Quê quán, nghề nghiệp, nơi ở, chức vụ...")
+            que_quan_gd = c5.text_input("Quê quán")
+            
+            c6, c7 = st.columns(2)
+            nghe_nghiep_gd = c6.text_input("Nghề nghiệp, chức vụ, đơn vị công tác")
+            noi_o_gd = c7.text_input("Nơi ở hiện nay")
             
             if st.form_submit_button("💾 THÊM NGƯỜI THÂN", use_container_width=True):
                 try:
                     supabase.table("quan_he_gia_dinh").insert({
                         "ma_cbcc": target_id, "loai_quan_he": loai_qh, "quan_he": quan_he, 
-                        "ho_ten": ho_ten_gd, "nam_sinh": nam_sinh_gd, "thong_tin_khac": thong_tin_gd
+                        "ho_ten": ho_ten_gd, "nam_sinh": nam_sinh_gd, 
+                        "que_quan_gd": que_quan_gd, "nghe_nghiep_gd": nghe_nghiep_gd, "noi_o_gd": noi_o_gd
                     }).execute()
                     st.success("✅ Đã thêm người thân thành công!"); st.rerun()
                 except Exception as e:
-                    st.error(f"Lỗi: Hãy chắc chắn bạn đã tạo bảng 'quan_he_gia_dinh' trên Supabase. Chi tiết: {e}")
+                    st.error(f"Lỗi: Hãy chắc chắn bạn đã tạo các cột mới trên Supabase. Chi tiết: {e}")
         
         st.markdown("#### 🔧 Nhấp đúp vào bảng để chỉnh sửa Dữ liệu cũ")
         try:
             df_gd = pd.DataFrame(supabase.table("quan_he_gia_dinh").select("*").eq("ma_cbcc", target_id).order("loai_quan_he").execute().data)
             if not df_gd.empty:
-                edited_gd = st.data_editor(df_gd.drop(columns=['ma_cbcc']), hide_index=True, use_container_width=True, disabled=["id"])
+                # Ẩn cột thong_tin_khac cũ đi để bảng hiển thị đẹp, dễ nhìn
+                df_gd_edit = df_gd.drop(columns=['thong_tin_khac'], errors='ignore')
+                edited_gd = st.data_editor(df_gd_edit.drop(columns=['ma_cbcc']), hide_index=True, use_container_width=True, disabled=["id"])
                 col_save4, col_del4 = st.columns([3, 1])
                 if col_save4.button("💾 LƯU CẬP NHẬT BẢNG GIA ĐÌNH", use_container_width=True):
                     update_data = edited_gd.copy(); update_data['ma_cbcc'] = target_id
@@ -577,4 +589,4 @@ elif menu in ["➕ Cập nhật Hồ sơ cá nhân", "➕ Admin: Cập nhật H�
                 if col_del4.button("🗑️ XÓA", key="btn_del4", use_container_width=True) and del_gd != "-- Chọn --":
                     supabase.table("quan_he_gia_dinh").delete().eq("id", del_gd).execute(); st.rerun()
         except:
-            st.warning("⚠️ Bảng 'quan_he_gia_dinh' chưa tồn tại trên cơ sở dữ liệu Supabase.")
+            st.warning("⚠️ Bảng 'quan_he_gia_dinh' chưa có đầy đủ các cột. Hãy vào Supabase thêm cột nhé!")
