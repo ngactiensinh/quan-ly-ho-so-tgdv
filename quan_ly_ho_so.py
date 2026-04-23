@@ -177,7 +177,7 @@ def get_idx(lst, val):
     except: return 0
 
 # ==========================================
-# HÀM XUẤT SƠ YẾU LÝ LỊCH CHUẨN MẪU 2C/TCTW-98 (BẢN FULL CÓ QUAN HỆ GIA ĐÌNH)
+# HÀM XUẤT SƠ YẾU LÝ LỊCH CHUẨN MẪU 2C/TCTW-98 (BẢN FULL 100% CÁC MỤC)
 # ==========================================
 def create_html_export(info, df_ct, df_l, df_kt, df_gd):
     # Format Lịch sử công tác
@@ -186,11 +186,11 @@ def create_html_export(info, df_ct, df_l, df_kt, df_gd):
         for _, row in df_ct.iterrows():
             tr_cong_tac += f"<tr><td>{row['tu_ngay']} - {row['den_ngay']}</td><td>{row['vi_tri']}, {row['don_vi']} (QĐ: {row.get('quyet_dinh_so', '')})</td></tr>"
     else:
-        tr_cong_tac = "<tr><td style='height:30px;'></td><td></td></tr><tr><td style='height:30px;'></td><td></td></tr>"
+        tr_cong_tac = "<tr><td style='height:40px;'></td><td></td></tr><tr><td style='height:40px;'></td><td></td></tr>"
 
     # Format Khen thưởng / Kỷ luật
-    khen_thuong = ", ".join(df_kt[df_kt['loai'] == 'Khen thưởng']['noi_dung'].tolist()) if not df_kt.empty and 'Khen thưởng' in df_kt['loai'].values else "......................................................................................"
-    ky_luat = ", ".join(df_kt[df_kt['loai'] == 'Kỷ luật']['noi_dung'].tolist()) if not df_kt.empty and 'Kỷ luật' in df_kt['loai'].values else "......................................................................................"
+    khen_thuong = ", ".join(df_kt[df_kt['loai'] == 'Khen thưởng']['noi_dung'].tolist()) if not df_kt.empty and 'Khen thưởng' in df_kt['loai'].values else "........................................................................................................"
+    ky_luat = ", ".join(df_kt[df_kt['loai'] == 'Kỷ luật']['noi_dung'].tolist()) if not df_kt.empty and 'Kỷ luật' in df_kt['loai'].values else "........................................................................................................"
 
     # Diễn biến lương
     bac_luong, he_so = "......", "......"
@@ -214,7 +214,7 @@ def create_html_export(info, df_ct, df_l, df_kt, df_gd):
     html = f"""
     <html><head><meta charset="utf-8"><title>Sơ yếu lý lịch 2C - {info['ho_ten']}</title>
     <style>
-        body {{ font-family: 'Times New Roman', serif; line-height: 1.6; max-width: 800px; margin: 0 auto; padding: 20px; font-size: 15px; color: black; }}
+        body {{ font-family: 'Times New Roman', serif; line-height: 1.5; max-width: 800px; margin: 0 auto; padding: 20px; font-size: 15px; color: black; }}
         .header-table {{ width: 100%; border: none; margin-bottom: 20px; }}
         .header-table td {{ border: none; padding: 0; vertical-align: top; }}
         h2 {{ text-align: center; font-size: 22px; margin: 10px 0 0 0; font-weight: bold; }}
@@ -280,7 +280,21 @@ def create_html_export(info, df_ct, df_l, df_kt, df_gd):
     <div class="row-item">24) Tình trạng sức khỏe: .............................................., Chiều cao: ................., Cân nặng: .........., Nhóm máu: ...............</div>
     <div class="row-item">25) Số chứng minh nhân dân: .............................................., Thương binh loại: .................., Gia đình liệt sĩ: .............</div>
     
-    <br>
+    <div class="page-break"></div>
+    <div class="row-item"><b>26) ĐÀO TẠO, BỒI DƯỠNG VỀ CHUYÊN MÔN, NGHIỆP VỤ, LÝ LUẬN CHÍNH TRỊ, NGOẠI NGỮ</b></div>
+    <table class="bordered">
+        <tr>
+            <th style="width: 25%;">Tên trường</th>
+            <th style="width: 25%;">Ngành học hoặc tên lớp học</th>
+            <th style="width: 15%;">Thời gian học</th>
+            <th style="width: 15%;">Hình thức học</th>
+            <th style="width: 20%;">Văn bằng, chứng chỉ, trình độ gì</th>
+        </tr>
+        <tr><td style='height:35px;'></td><td></td><td></td><td></td><td></td></tr>
+        <tr><td style='height:35px;'></td><td></td><td></td><td></td><td></td></tr>
+        <tr><td style='height:35px;'></td><td></td><td></td><td></td><td></td></tr>
+    </table>
+    
     <div class="row-item"><b>27) TÓM TẮT QUÁ TRÌNH CÔNG TÁC</b></div>
     <table class="bordered">
         <tr><th style="width: 30%;">Từ tháng, năm<br>đến tháng, năm</th><th style="width: 70%;">Chức danh, chức vụ, đơn vị công tác<br>(Đảng, Chính quyền, Đoàn thể)</th></tr>
@@ -288,8 +302,18 @@ def create_html_export(info, df_ct, df_l, df_kt, df_gd):
     </table>
 
     <div class="page-break"></div>
+    <div class="row-item"><b>28) ĐẶC ĐIỂM LỊCH SỬ BẢN THÂN</b></div>
+    <div class="row-item">a) Khai rõ: bị bắt, bị tù (từ ngày tháng năm nào đến ngày tháng năm nào, ở đâu), đã khai báo cho ai, những vấn đề gì? ............................................................................................................................................................................................................................</div>
+    <div class="row-item">b) Bản thân có làm việc trong chế độ cũ (Cơ quan, đơn vị nào, địa điểm, chức danh, chức vụ, thời gian làm việc...) ............................................................................................................................................................................................................................</div>
+    
+    <br>
+    <div class="row-item"><b>29) QUAN HỆ VỚI NƯỚC NGOÀI</b></div>
+    <div class="row-item">- Tham gia hoặc có quan hệ với các tổ chức chính trị, kinh tế, xã hội nào ở nước ngoài (làm gì, tổ chức nào, đặt trụ sở ở đâu..?): .........................................................................................................................................................................................................</div>
+    <div class="row-item">- Có thân nhân (Bố, mẹ, vợ, chồng, con, anh chị em ruột) ở nước ngoài (làm gì, địa chỉ...)? ................................................................................................................................................................................................................................................................</div>
+    
+    <br>
     <div class="row-item"><b>30) QUAN HỆ GIA ĐÌNH</b></div>
-    <div class="row-item"><b>a) Về bản thân:</b> (Bố, Mẹ, Vợ (chồng), các con, anh chị em ruột)</div>
+    <div class="row-item"><b>a) Về bản thân:</b> Bố, Mẹ, Vợ (chồng), các con, anh chị em ruột</div>
     <table class="bordered">
         <tr><th style="width: 15%;">Quan hệ</th><th style="width: 25%;">Họ và tên</th><th style="width: 10%;">Năm sinh</th><th style="width: 50%;">Quê quán, nghề nghiệp, chức danh, chức vụ, đơn vị công tác, nơi ở...</th></tr>
         {tr_gd_ban_than}
@@ -301,7 +325,21 @@ def create_html_export(info, df_ct, df_l, df_kt, df_gd):
         {tr_gd_ben_vo}
     </table>
     
-    <div class="row-item" style="font-size: 13px;"><i>(Lưu ý: Các mục 26, 28, 29, 31 do đặc thù riêng, vui lòng kê khai bổ sung trực tiếp bằng bút sau khi in phôi này)</i></div>
+    <div class="page-break"></div>
+    <div class="row-item"><b>31) HOÀN CẢNH KINH TẾ GIA ĐÌNH</b></div>
+    <div class="row-item">- Quá trình lương của bản thân: <i>(Ghi theo bảng diễn biến lương tại mục 19, hoặc hồ sơ phụ lục)</i></div>
+    <div class="row-item">- Nguồn thu nhập chính của gia đình (hàng năm): <br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+ Lương: ..............................................................................................................................................................<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+ Các nguồn khác: ..............................................................................................................................................
+    </div>
+    <div class="row-item">- Nhà ở: <br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+ Được cấp, được thuê, loại nhà: ........................................, tổng diện tích sử dụng: .................... m2<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+ Nhà tự mua, tự xây, loại nhà: ..........................................., tổng diện tích sử dụng: .................... m2
+    </div>
+    <div class="row-item">- Đất ở: <br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+ Đất được cấp: .................................... m2 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+ Đất tự mua: .................................... m2
+    </div>
+    <div class="row-item">- Đất sản xuất, kinh doanh: (Tổng diện tích đất được cấp, tự mua, tự khai phá...) ..................................................... <br>.......................................................................................................................................................................................................</div>
     <br><br>
 
     <table class="header-table">
