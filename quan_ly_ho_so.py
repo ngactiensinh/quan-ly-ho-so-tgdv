@@ -32,7 +32,7 @@ def log_access("Quản lý Hồ sơ CBCC"):
 
 # GỌI HÀM KÍCH HOẠT ĐẾM:
 # Sếp nhớ sửa chữ bên trong ngoặc kép cho khớp với tên của từng App nhé!
-log_access("Phòng họp E-Cabinet")
+log_access("Quản lý Hồ sơ CBCC")
 
 # ==========================================
 # HÀM XỬ LÝ LOGO (TỰ ĐỘNG LẤY ẢNH LOCAL HOẶC WEB)
