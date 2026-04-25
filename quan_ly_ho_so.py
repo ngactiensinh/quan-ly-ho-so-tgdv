@@ -20,7 +20,7 @@ except Exception:
 # ==========================================
 # HÀM ĐẾM LƯỢT TRUY CẬP THÔNG MINH
 # ==========================================
-def log_access("Quản lý Hồ sơ CBCC"):
+def log_access(app_name):
     # Tạo key riêng cho mỗi app để chỉ đếm 1 lần khi người dùng mới vào trang
     key_name = f"da_dem_truy_cap_{app_name}"
     if key_name not in st.session_state:
@@ -30,8 +30,7 @@ def log_access("Quản lý Hồ sơ CBCC"):
         except:
             pass # Lỗi mạng thì bỏ qua để không ảnh hưởng app
 
-# GỌI HÀM KÍCH HOẠT ĐẾM:
-# Sếp nhớ sửa chữ bên trong ngoặc kép cho khớp với tên của từng App nhé!
+# GỌI HÀM KÍCH HOẠT ĐẾM VỚI TÊN ĐÚNG CỦA TRANG:
 log_access("Quản lý Hồ sơ CBCC")
 
 # ==========================================
