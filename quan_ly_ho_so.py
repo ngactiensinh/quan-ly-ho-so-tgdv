@@ -157,7 +157,7 @@ if not st.session_state["logged_in"]:
                                         st.session_state["ho_ten"] = user['ho_ten']; st.session_state["role"] = user['phan_quyen']
                                         st.session_state["menu_selection"] = "📊 Dashboard" if user['phan_quyen'] == 'Admin' else "🔍 Hồ sơ của tôi"
                                         st.rerun()
-                                else: st.error("❌ Sai mật khẩu!")
+                                else: st.error("❌ Đồng chí nhập sai mật khẩu! Nếu quên, hãy liên hệ Quản trị hệ thống để lấy lại mật khẩu.")
                             else: st.error("❌ Không tìm thấy Mã CBCC này!")
                         except Exception as e: st.error(f"Lỗi kết nối: {e}")
         with tab_register:
@@ -340,12 +340,17 @@ elif menu == "🛡️ Admin: Duyệt Tài khoản":
             st.dataframe(df_hoatdong[['ma_cbcc', 'ho_ten', 'chuc_vu', 'don_vi', 'phan_quyen']], hide_index=True)
             c_rs, c_del = st.columns(2)
             ds_hd = (df_hoatdong['ma_cbcc'] + " - " + df_hoatdong['ho_ten']).tolist()
-            with c_rs:
-                st.markdown("#### 🔄 Reset Mật khẩu")
-                rs_ma = st.selectbox("Chọn tài khoản cần Reset về 'Chuyenvien@2026':", ds_hd)
-                if st.button("⚠️ XÁC NHẬN RESET", use_container_width=True):
-                    supabase.table("tai_khoan").update({"mat_khau": "Chuyenvien@2026"}).eq("ma_cbcc", rs_ma.split(" - ")[0]).execute()
-                    st.success("✅ Đã reset thành công!")
+            st.markdown("#### 🔑 Tra cứu Mật khẩu")
+                rs_ma = st.selectbox("Chọn tài khoản cần xem mật khẩu:", ds_hd)
+                if st.button("👁️ XEM MẬT KHẨU", use_container_width=True):
+                    ma_xem = rs_ma.split(" - ")[0]
+                    ten_xem = rs_ma.split(" - ")[1]
+                    # Chui vào database lấy mật khẩu ra
+                    mk_data = supabase.table("tai_khoan").select("mat_khau").eq("ma_cbcc", ma_xem).execute().data
+                    if mk_data:
+                        st.info(f"💡 Mật khẩu của đồng chí **{ten_xem}** ({ma_xem}) là: **{mk_data[0]['mat_khau']}**")
+                    else:
+                        st.error("⚠️ Không tìm thấy dữ liệu mật khẩu!")
             with c_del:
                 st.markdown("#### ❌ Xóa Tài khoản")
                 del_ma = st.selectbox("Chọn tài khoản cần XÓA VĨNH VIỄN:", ["-- Chọn --"] + ds_hd)
