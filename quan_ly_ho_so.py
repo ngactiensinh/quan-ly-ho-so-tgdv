@@ -340,7 +340,8 @@ elif menu == "🛡️ Admin: Duyệt Tài khoản":
             st.dataframe(df_hoatdong[['ma_cbcc', 'ho_ten', 'chuc_vu', 'don_vi', 'phan_quyen']], hide_index=True)
             c_rs, c_del = st.columns(2)
             ds_hd = (df_hoatdong['ma_cbcc'] + " - " + df_hoatdong['ho_ten']).tolist()
-            st.markdown("#### 🔑 Tra cứu Mật khẩu")
+       with c_rs:
+                st.markdown("#### 🔑 Tra cứu Mật khẩu")
                 rs_ma = st.selectbox("Chọn tài khoản cần xem mật khẩu:", ds_hd)
                 if st.button("👁️ XEM MẬT KHẨU", use_container_width=True):
                     ma_xem = rs_ma.split(" - ")[0]
