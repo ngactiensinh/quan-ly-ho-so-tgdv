@@ -162,7 +162,7 @@ if not st.session_state["logged_in"]:
                         except Exception as e: st.error(f"Lỗi kết nối: {e}")
         with tab_register:
             with st.form("register_form"):
-                reg_ma = st.text_input("Mã CBCC (Tên đăng nhập)*").strip().upper()
+                reg_ma = st.text_input("Mã CBCC *").strip().upper()
                 reg_name = st.text_input("Họ và tên*")
                 reg_cv = st.selectbox("Chức vụ", DS_CHUC_VU)
                 reg_dv = st.selectbox("Đơn vị công tác", DS_DON_VI)
