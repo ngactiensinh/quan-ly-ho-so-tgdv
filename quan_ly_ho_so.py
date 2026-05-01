@@ -335,12 +335,13 @@ elif menu == "🛡️ Admin: Duyệt Tài khoản":
                         if c_xoa.button("❌ TỪ CHỐI & XÓA", key=f"xoa_cd_{row['ma_cbcc']}", use_container_width=True):
                             supabase.table("tai_khoan").delete().eq("ma_cbcc", row['ma_cbcc']).execute()
                             st.success("Đã xóa yêu cầu!"); st.rerun()
-        with tab_hd:
+       with tab_hd:
             df_hoatdong = df_tk[df_tk['trang_thai'] == 'Hoạt động']
             st.dataframe(df_hoatdong[['ma_cbcc', 'ho_ten', 'chuc_vu', 'don_vi', 'phan_quyen']], hide_index=True)
             c_rs, c_del = st.columns(2)
             ds_hd = (df_hoatdong['ma_cbcc'] + " - " + df_hoatdong['ho_ten']).tolist()
-       with c_rs:
+            
+            with c_rs:
                 st.markdown("#### 🔑 Tra cứu Mật khẩu")
                 rs_ma = st.selectbox("Chọn tài khoản cần xem mật khẩu:", ds_hd)
                 if st.button("👁️ XEM MẬT KHẨU", use_container_width=True):
@@ -352,6 +353,7 @@ elif menu == "🛡️ Admin: Duyệt Tài khoản":
                         st.info(f"💡 Mật khẩu của đồng chí **{ten_xem}** ({ma_xem}) là: **{mk_data[0]['mat_khau']}**")
                     else:
                         st.error("⚠️ Không tìm thấy dữ liệu mật khẩu!")
+            
             with c_del:
                 st.markdown("#### ❌ Xóa Tài khoản")
                 del_ma = st.selectbox("Chọn tài khoản cần XÓA VĨNH VIỄN:", ["-- Chọn --"] + ds_hd)
@@ -362,7 +364,7 @@ elif menu == "🛡️ Admin: Duyệt Tài khoản":
                         else:
                             supabase.table("tai_khoan").delete().eq("ma_cbcc", ma_xoa).execute()
                             st.success(f"✅ Đã xóa vĩnh viễn tài khoản {ma_xoa}!"); st.rerun()
-
+                            
 # --- MODULE 3: TRA CỨU / HỒ SƠ CỦA TÔI ---
 elif menu in ["🔍 Tra cứu & Xem Hồ sơ", "🔍 Hồ sơ của tôi"]:
     st.markdown("### 🔍 THÔNG TIN HỒ SƠ")
