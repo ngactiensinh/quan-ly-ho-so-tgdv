@@ -141,7 +141,7 @@ if not st.session_state["logged_in"]:
         tab_login, tab_register = st.tabs(["🔐 Đăng nhập", "📝 Đăng ký Tài khoản"])
         with tab_login:
             with st.form("login_form"):
-                log_ma = st.text_input("Mã CBCC (Tên đăng nhập):").strip().upper()
+                log_ma = st.text_input("Mã CBCC:").strip().upper()
                 log_pass = st.text_input("Mật khẩu:", type="password")
                 if st.form_submit_button("🚀 ĐĂNG NHẬP", use_container_width=True):
                     if not log_ma or not log_pass: st.error("⚠️ Vui lòng nhập đủ thông tin!")
