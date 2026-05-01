@@ -321,6 +321,7 @@ elif menu == "🛡️ Admin: Duyệt Tài khoản":
     else:
         df_tk = pd.DataFrame(tk_data)
         tab_cd, tab_hd = st.tabs(["⏳ Danh sách Chờ duyệt", "✅ Tài khoản đang Hoạt động"])
+        
         with tab_cd:
             df_choduyet = df_tk[df_tk['trang_thai'] == 'Chờ duyệt']
             if df_choduyet.empty: st.success("🎉 Không có yêu cầu nào đang chờ duyệt!")
@@ -335,7 +336,8 @@ elif menu == "🛡️ Admin: Duyệt Tài khoản":
                         if c_xoa.button("❌ TỪ CHỐI & XÓA", key=f"xoa_cd_{row['ma_cbcc']}", use_container_width=True):
                             supabase.table("tai_khoan").delete().eq("ma_cbcc", row['ma_cbcc']).execute()
                             st.success("Đã xóa yêu cầu!"); st.rerun()
-       with tab_hd:
+                            
+        with tab_hd:
             df_hoatdong = df_tk[df_tk['trang_thai'] == 'Hoạt động']
             st.dataframe(df_hoatdong[['ma_cbcc', 'ho_ten', 'chuc_vu', 'don_vi', 'phan_quyen']], hide_index=True)
             c_rs, c_del = st.columns(2)
