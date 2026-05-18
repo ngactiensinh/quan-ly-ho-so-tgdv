@@ -1,6 +1,6 @@
 """
-HỆ THỐNG QUẢN LÝ HỒ SƠ CÁN BỘ, CÔNG CHỨC - PHIÊN BẢN V6.0 (CHUẨN 2C-TW)
-Đã cập nhật: Bổ sung 11 trường thông tin cá nhân theo quy định của Ban Tổ chức Trung ương
+HỆ THỐNG QUẢN LÝ HỒ SƠ CÁN BỘ, CÔNG CHỨC - PHIÊN BẢN V6.1
+Đã vá: Lỗi đánh máy trường "ngoai_ngu" gây lỗi không lưu được dữ liệu
 """
 
 import streamlit as st
@@ -318,10 +318,8 @@ st.markdown(f"""
 # ==========================================
 @st.cache_data(ttl=5)
 def load_profiles():
-    try:
-        return pd.DataFrame(supabase.table("ho_so_cbcc").select("*").execute().data)
-    except Exception:
-        return pd.DataFrame()
+    try: return pd.DataFrame(supabase.table("ho_so_cbcc").select("*").execute().data)
+    except Exception: return pd.DataFrame()
 
 df_hoso = load_profiles()
 
@@ -334,8 +332,7 @@ def section_title(icon, text):
 
 def create_html_export(info, df_ct, df_l, df_kt, df_gd):
     def tbl(df, rename_map):
-        if df.empty:
-            return "<tr><td colspan='10' style='text-align:center;color:#888;padding:16px;'>Chưa có dữ liệu.</td></tr>"
+        if df.empty: return "<tr><td colspan='10' style='text-align:center;color:#888;padding:16px;'>Chưa có dữ liệu.</td></tr>"
         df2 = df.rename(columns=rename_map).drop(columns=['id', 'ma_cbcc'], errors='ignore')
         rows = ""
         for _, row in df2.iterrows():
@@ -523,7 +520,7 @@ elif menu == "🛡️ Admin: Duyệt Tài khoản":
                                     supabase.table("ho_so_cbcc").insert({
                                         "id": row['ma_cbcc'], "ho_ten": row['ho_ten'],
                                         "chuc_vu": row['chuc_vu'], "don_vi": row['don_vi'],
-                                        "quoc_tich": "Việt Nam"
+                                        "quoc_tich": "Việt Nam", "dan_toc": "Kinh"
                                     }).execute()
                             except Exception:
                                 pass
@@ -552,7 +549,7 @@ elif menu == "🛡️ Admin: Duyệt Tài khoản":
                     ten_xem = rs_ma.split(" — ")[1]
                     mk_data = supabase.table("tai_khoan").select("mat_khau").eq("ma_cbcc", ma_xem).execute().data
                     if mk_data:
-                        st.info(f"09 Mật khẩu của **{ten_xem}** ({ma_xem}): `{mk_data[0]['mat_khau']}`")
+                        st.info(f"🔐 Mật khẩu của **{ten_xem}** ({ma_xem}): `{mk_data[0]['mat_khau']}`")
                     else:
                         st.error("Không tìm thấy dữ liệu.")
             with c_del:
@@ -610,10 +607,8 @@ elif menu in ["🔍 Tra cứu & Xem Hồ sơ", "🔍 Hồ sơ của tôi"]:
             df_ct = pd.DataFrame(supabase.table("lich_su_cong_tac").select("tu_ngay, den_ngay, vi_tri, don_vi, quyet_dinh_so").eq("ma_cbcc", ma_chon).order("id").execute().data)
             df_l = pd.DataFrame(supabase.table("dien_bien_luong").select("ngay_quyet_dinh, bac_luong, he_so, quyet_dinh_so").eq("ma_cbcc", ma_chon).order("id").execute().data)
             df_kt = pd.DataFrame(supabase.table("khen_thuong_ky_luat").select("ngay_quyet_dinh, loai, noi_dung, quyet_dinh_so").eq("ma_cbcc", ma_chon).order("id").execute().data)
-            try:
-                df_gd = pd.DataFrame(supabase.table("quan_he_gia_dinh").select("*").eq("ma_cbcc", ma_chon).order("loai_quan_he").execute().data)
-            except Exception:
-                df_gd = pd.DataFrame()
+            try: df_gd = pd.DataFrame(supabase.table("quan_he_gia_dinh").select("*").eq("ma_cbcc", ma_chon).order("loai_quan_he").execute().data)
+            except Exception: df_gd = pd.DataFrame()
 
             html_data = create_html_export(info, df_ct, df_l, df_kt, df_gd)
             col_dl.download_button(
@@ -741,7 +736,7 @@ elif menu in ["➕ Cập nhật Hồ sơ cá nhân", "➕ Admin: Cập nhật H�
             chuyen_mon = cx2.text_input("Trình độ chuyên môn", value=ex_data.get("trinh_do_chuyen_mon", ""))
             hoc_vi = cx3.text_input("Học vị (VD: Thạc sĩ, Tiến sĩ)", value=ex_data.get("hoc_vi", ""))
             ngoai_ngu = cx4.text_input("Ngoại ngữ (VD: Anh B1, Trung Khá)", value=ex_data.get("ngoai_ngu", ""))
-            tin_hoc = cx5.text_input("Tin học (VD: MOS, Chứng chỉ chuẩn bưu chính)", value=ex_data.get("tin_hoc", ""))
+            tin_hoc = cx5.text_input("Tin học (VD: Cơ bản, B)", value=ex_data.get("tin_hoc", ""))
 
             st.write("---")
             st.markdown("**☭ Lịch sử Đảng viên**")
@@ -760,7 +755,7 @@ elif menu in ["➕ Cập nhật Hồ sơ cá nhân", "➕ Admin: Cập nhật H�
                         "gioi_tinh": gioi_tinh, "quoc_tich": quoc_tich, "dan_toc": dan_toc,
                         "que_quan": que_quan, "noi_khai_sinh": noi_khai_sinh, "thuong_tru": thuong_tru, "noi_o_hien_nay": noi_o_hien_nay,
                         "don_vi": don_vi, "chuc_vu": chuc_vu, "chuc_vu_dang": chuc_vu_dang, "nghe_nghiep_ht": nghe_nghiep_ht, "ngach_cong_chuc": ngach,
-                        "giao_duc_pt": giao_duc_pt, "trinh_do_chuyen_mon": chuyen_mon, "hoc_vi": hoc_vi, "ngoai_ngu": ngoại_ngu, "tin_hoc": tin_hoc,
+                        "giao_duc_pt": giao_duc_pt, "trinh_do_chuyen_mon": chuyen_mon, "hoc_vi": hoc_vi, "ngoai_ngu": ngoai_ngu, "tin_hoc": tin_hoc,
                         "ly_luan_chinh_tri": ly_luan, "ngay_vao_dang": ngay_ket_nap, "ngay_chinh_thuc": ngay_chinh_thuc
                     }
                     supabase.table("ho_so_cbcc").upsert(data).execute()
