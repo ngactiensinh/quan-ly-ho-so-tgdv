@@ -14,15 +14,15 @@ st.set_page_config(
 )
 
 # ==========================================
-# CẤU HÌNH SUPABASE
+# CẤU HÌNH SUPABASE (BẢO MẬT BẰNG SECRETS)
 # ==========================================
-SUPABASE_URL = "https://qqzsdxhqrdfvxnlurnyb.supabase.co"
-SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFxenNkeGhxcmRmdnhubHVybnliIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2MjY0NjAsImV4cCI6MjA5MTIwMjQ2MH0.H62F5zYEZ5l47fS4IdAE2JdRdI7inXQqWG0nvXhn2P8"
-
 try:
+    SUPABASE_URL = st.secrets["SUPABASE_URL"]
+    SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
     supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
-except Exception:
-    pass
+except Exception as e:
+    st.error("⚠️ Lỗi kết nối cơ sở dữ liệu. Sếp vui lòng kiểm tra lại cấu hình Secrets trên Streamlit nhé!")
+    st.stop()
 
 def log_access(app_name):
     key_name = f"da_dem_truy_cap_{app_name}"
