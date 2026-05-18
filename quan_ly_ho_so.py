@@ -1,3 +1,8 @@
+"""
+HỆ THỐNG QUẢN LÝ HỒ SƠ CBCC TGDV
+Bản cập nhật: Tự động khởi tạo Hồ sơ gốc ngay khi Admin duyệt Tài khoản thành công
+"""
+
 import streamlit as st
 import pandas as pd
 from supabase import create_client, Client
@@ -17,20 +22,19 @@ try:
     supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 except Exception:
     pass
+
 # ==========================================
 # HÀM ĐẾM LƯỢT TRUY CẬP THÔNG MINH
 # ==========================================
 def log_access(app_name):
-    # Tạo key riêng cho mỗi app để chỉ đếm 1 lần khi người dùng mới vào trang
     key_name = f"da_dem_truy_cap_{app_name}"
     if key_name not in st.session_state:
         try:
             supabase.table("thong_ke_truy_cap").insert({"ten_app": app_name}).execute()
             st.session_state[key_name] = True
         except:
-            pass # Lỗi mạng thì bỏ qua để không ảnh hưởng app
+            pass 
 
-# GỌI HÀM KÍCH HOẠT ĐẾM VỚI TÊN ĐÚNG CỦA TRANG:
 log_access("Quản lý Hồ sơ CBCC")
 
 # ==========================================
@@ -330,9 +334,27 @@ elif menu == "🛡️ Admin: Duyệt Tài khoản":
                     with st.expander(f"👤 {row['ho_ten']} ({row['ma_cbcc']})"):
                         st.write(f"**Chức vụ:** {row['chuc_vu']} | **Đơn vị:** {row['don_vi']}")
                         c_duyet, c_xoa = st.columns(2)
+                        
+                        # --- THUẬT TOÁN DUYỆT ĐỒNG THỜI TẠO VỎ HỒ SƠ ---
                         if c_duyet.button("✅ DUYỆT TÀI KHOẢN", key=f"duyet_{row['ma_cbcc']}", use_container_width=True):
+                            # 1. Update trạng thái tài khoản thành Hoạt động
                             supabase.table("tai_khoan").update({"trang_thai": "Hoạt động"}).eq("ma_cbcc", row['ma_cbcc']).execute()
-                            st.success("Đã duyệt!"); st.rerun()
+                            
+                            # 2. Tạo sẵn vỏ hồ sơ cho cán bộ bên bảng ho_so_cbcc (nếu chưa có)
+                            try:
+                                hoso_exist = supabase.table("ho_so_cbcc").select("id").eq("id", row['ma_cbcc']).execute().data
+                                if len(hoso_exist) == 0:
+                                    supabase.table("ho_so_cbcc").insert({
+                                        "id": row['ma_cbcc'],
+                                        "ho_ten": row['ho_ten'],
+                                        "chuc_vu": row['chuc_vu'],
+                                        "don_vi": row['don_vi']
+                                    }).execute()
+                            except Exception as e:
+                                st.error(f"Lỗi khi tạo hồ sơ nền: {e}")
+                                
+                            st.success("Đã duyệt và tạo Hồ sơ thành công!"); st.rerun()
+                            
                         if c_xoa.button("❌ TỪ CHỐI & XÓA", key=f"xoa_cd_{row['ma_cbcc']}", use_container_width=True):
                             supabase.table("tai_khoan").delete().eq("ma_cbcc", row['ma_cbcc']).execute()
                             st.success("Đã xóa yêu cầu!"); st.rerun()
@@ -349,7 +371,6 @@ elif menu == "🛡️ Admin: Duyệt Tài khoản":
                 if st.button("👁️ XEM MẬT KHẨU", use_container_width=True):
                     ma_xem = rs_ma.split(" - ")[0]
                     ten_xem = rs_ma.split(" - ")[1]
-                    # Chui vào database lấy mật khẩu ra
                     mk_data = supabase.table("tai_khoan").select("mat_khau").eq("ma_cbcc", ma_xem).execute().data
                     if mk_data:
                         st.info(f"💡 Mật khẩu của đồng chí **{ten_xem}** ({ma_xem}) là: **{mk_data[0]['mat_khau']}**")
@@ -365,7 +386,9 @@ elif menu == "🛡️ Admin: Duyệt Tài khoản":
                         if ma_xoa == "ADMIN": st.error("⚠️ Không thể xóa tài khoản Admin gốc!")
                         else:
                             supabase.table("tai_khoan").delete().eq("ma_cbcc", ma_xoa).execute()
-                            st.success(f"✅ Đã xóa vĩnh viễn tài khoản {ma_xoa}!"); st.rerun()
+                            # Tự động xóa luôn Hồ sơ bên kia nếu có
+                            supabase.table("ho_so_cbcc").delete().eq("id", ma_xoa).execute()
+                            st.success(f"✅ Đã xóa vĩnh viễn tài khoản và hồ sơ của {ma_xoa}!"); st.rerun()
                             
 # --- MODULE 3: TRA CỨU / HỒ SƠ CỦA TÔI ---
 elif menu in ["🔍 Tra cứu & Xem Hồ sơ", "🔍 Hồ sơ của tôi"]:
@@ -389,7 +412,7 @@ elif menu in ["🔍 Tra cứu & Xem Hồ sơ", "🔍 Hồ sơ của tôi"]:
             ma_chon = st.session_state["ma_cbcc"]
             match = df_hoso[df_hoso['id'] == ma_chon]
             if match.empty:
-                st.warning("❌ Bạn chưa tạo hồ sơ. Vui lòng sang tab Cập nhật để điền thông tin!")
+                st.warning("❌ Hồ sơ của bạn chưa được khởi tạo đầy đủ. Vui lòng liên hệ Admin!")
                 ma_chon = ""
 
         if ma_chon:
@@ -401,7 +424,7 @@ elif menu in ["🔍 Tra cứu & Xem Hồ sơ", "🔍 Hồ sơ của tôi"]:
                     st.session_state["menu_selection"] = "➕ Admin: Cập nhật Hồ sơ (Tất cả)" if is_admin else "➕ Cập nhật Hồ sơ cá nhân"
                     st.rerun()
 
-            st.markdown(f"""<div class="profile-card"><div class="profile-name">{info['ho_ten']}</div><div class="profile-title">{info['chuc_vu']} | {info['don_vi']}</div><hr style="border-top: 1px dashed #dee2e6;"><div class="profile-info"><div><p><span class="info-label">Mã CBCC:</span> {info['id']}</p><p><span class="info-label">Ngày sinh:</span> {info['ngay_sinh']}</p><p><span class="info-label">Giới tính:</span> {info['gioi_tinh']}</p><p><span class="info-label">Quê quán:</span> {info['que_quan']}</p></div><div><p><span class="info-label">Ngạch:</span> {info['ngach_cong_chuc']}</p><p><span class="info-label">Chuyên môn:</span> {info['trinh_do_chuyen_mon']}</p><p><span class="info-label">Lý luận CT:</span> {info['ly_luan_chinh_tri']}</p><p><span class="info-label">Ngày vào Đảng:</span> Kết nạp: {info.get('ngay_vao_dang','')} | Chính thức: {info.get('ngay_chinh_thuc','')}</p></div></div></div>""", unsafe_allow_html=True)
+            st.markdown(f"""<div class="profile-card"><div class="profile-name">{info['ho_ten']}</div><div class="profile-title">{info['chuc_vu']} | {info['don_vi']}</div><hr style="border-top: 1px dashed #dee2e6;"><div class="profile-info"><div><p><span class="info-label">Mã CBCC:</span> {info['id']}</p><p><span class="info-label">Ngày sinh:</span> {info.get('ngay_sinh', 'Chưa cập nhật')}</p><p><span class="info-label">Giới tính:</span> {info.get('gioi_tinh', 'Chưa cập nhật')}</p><p><span class="info-label">Quê quán:</span> {info.get('que_quan', 'Chưa cập nhật')}</p></div><div><p><span class="info-label">Ngạch:</span> {info.get('ngach_cong_chuc', 'Chưa cập nhật')}</p><p><span class="info-label">Chuyên môn:</span> {info.get('trinh_do_chuyen_mon', 'Chưa cập nhật')}</p><p><span class="info-label">Lý luận CT:</span> {info.get('ly_luan_chinh_tri', 'Chưa cập nhật')}</p><p><span class="info-label">Ngày vào Đảng:</span> Kết nạp: {info.get('ngay_vao_dang','...')} | Chính thức: {info.get('ngay_chinh_thuc','...')}</p></div></div></div>""", unsafe_allow_html=True)
             
             df_ct = pd.DataFrame(supabase.table("lich_su_cong_tac").select("tu_ngay, den_ngay, vi_tri, don_vi, quyet_dinh_so").eq("ma_cbcc", ma_chon).order("id").execute().data)
             df_l = pd.DataFrame(supabase.table("dien_bien_luong").select("ngay_quyet_dinh, bac_luong, he_so, quyet_dinh_so").eq("ma_cbcc", ma_chon).order("id").execute().data)
@@ -435,7 +458,6 @@ elif menu in ["🔍 Tra cứu & Xem Hồ sơ", "🔍 Hồ sơ của tôi"]:
                 else: st.info("Chưa có dữ liệu.")
             with t_gd:
                 if not df_gd.empty: 
-                    # Hiển thị bảng gia đình gỡ bỏ các cột hệ thống và đổi tên cột tiếng Việt
                     df_gd_show = df_gd.drop(columns=['id', 'ma_cbcc', 'created_at', 'thong_tin_khac'], errors='ignore').rename(columns={
                         'loai_quan_he':'Phân loại', 'quan_he':'Quan hệ', 'ho_ten':'Họ Tên', 'nam_sinh':'Năm sinh', 
                         'que_quan_gd':'Quê quán', 'nghe_nghiep_gd':'Nghề nghiệp/Công tác', 'noi_o_gd':'Nơi ở hiện nay'
@@ -601,7 +623,6 @@ elif menu in ["➕ Cập nhật Hồ sơ cá nhân", "➕ Admin: Cập nhật H�
         try:
             df_gd = pd.DataFrame(supabase.table("quan_he_gia_dinh").select("*").eq("ma_cbcc", target_id).order("loai_quan_he").execute().data)
             if not df_gd.empty:
-                # Ẩn cột thong_tin_khac cũ và created_at đi để bảng hiển thị đẹp, dễ nhìn
                 df_gd_edit = df_gd.drop(columns=['thong_tin_khac', 'created_at'], errors='ignore')
                 edited_gd = st.data_editor(df_gd_edit.drop(columns=['ma_cbcc']), hide_index=True, use_container_width=True, disabled=["id"])
                 col_save4, col_del4 = st.columns([3, 1])
