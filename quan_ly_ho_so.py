@@ -1,6 +1,6 @@
 """
-HỆ THỐNG QUẢN LÝ HỒ SƠ CÁN BỘ, CÔNG CHỨC - PHIÊN BẢN V6.2 (FINAL)
-Đã cập nhật: Full 11 trường mới chuẩn 2C-TW, fix lỗi chính tả, fix lỗi giao diện Sidebar
+HỆ THỐNG QUẢN LÝ HỒ SƠ CÁN BỘ, CÔNG CHỨC - PHIÊN BẢN V6.3 (MOBILE FIX)
+Đã cập nhật: Phục hồi nút mở Sidebar trên giao diện điện thoại di động
 """
 
 import streamlit as st
@@ -19,13 +19,26 @@ st.set_page_config(
     page_title="Hồ sơ CBCC - Ban Tuyên giáo & Dân vận Tuyên Quang",
     page_icon="🏛️",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="auto"
 )
 
-# Thêm CSS ép sidebar luôn hiển thị nút mở rộng
+# Thêm CSS ép sidebar luôn hiển thị nút mở rộng và phục hồi Header trên Mobile
 st.markdown("""
 <style>
-    [data-testid="stSidebarCollapse"] { visibility: visible !important; }
+    /* Làm nổi bật nút mũi tên/hamburger menu trên điện thoại */
+    [data-testid="collapsedControl"] {
+        visibility: visible !important;
+        background-color: #0A1628 !important; /* Xanh Navy */
+        color: #D4AF37 !important; /* Màu Vàng Gold */
+        border-radius: 6px;
+        top: 15px;
+        left: 15px;
+        z-index: 99999 !important;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    }
+    [data-testid="collapsedControl"] svg {
+        fill: #D4AF37 !important;
+    }
     [data-testid="stSidebar"] { z-index: 9999 !important; }
 </style>
 """, unsafe_allow_html=True)
@@ -163,7 +176,10 @@ st.markdown("""
 
     /* ---- EXPANDER ---- */
     [data-testid="stExpander"] summary { font-weight: 600 !important; color: var(--navy-mid) !important; background: var(--off-white) !important; border-left: 4px solid var(--gold) !important; border-radius: 6px !important; padding: 12px 16px !important; }
-    #MainMenu, footer, header { visibility: hidden !important; }
+    
+    /* ---- ĐÃ FIX LỖI ẨN HEADER TRÊN ĐIỆN THOẠI ---- */
+    #MainMenu, footer { visibility: hidden !important; }
+    header { background-color: transparent !important; }
     .block-container { padding-top: 24px !important; padding-bottom: 40px !important; }
 </style>
 """, unsafe_allow_html=True)
