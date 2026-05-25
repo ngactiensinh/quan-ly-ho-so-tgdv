@@ -851,7 +851,7 @@ elif menu in ["➕ Cập nhật Hồ sơ cá nhân", "➕ Admin: Cập nhật H�
 
     with tab_gd:
         st.info("📌 Kê khai quan hệ gia đình: bao gồm bản thân (bố, mẹ, vợ/chồng, con, anh chị em ruột) và bên vợ/chồng.")
-        st.info("📌 Lưu ý: Nếu người thân đã mất, ghi 'Đã từ trần (năm...)' vào mục Nghề nghiệp / Công tác.")
+        st.info("📌 Lưu ý: Nếu người thân đã mất, ghi 'Đã chết (năm...)' vào mục Nghề nghiệp, chức vụ, đơn vị.")
         with st.form("form_giadinh"):
             c1, c2, c3 = st.columns([1, 1, 2])
             loai_qh = c1.selectbox("Phân loại", ["Bản thân", "Bên vợ/chồng"])
