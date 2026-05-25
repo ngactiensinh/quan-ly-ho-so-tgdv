@@ -689,16 +689,12 @@ elif menu in ["🔍 Tra cứu & Xem Hồ sơ", "🔍 Hồ sơ của tôi"]:
                 if not df_kt.empty: st.dataframe(df_kt.rename(columns={'ngay_quyet_dinh': 'Ngày QĐ', 'loai': 'Loại', 'noi_dung': 'Nội dung', 'quyet_dinh_so': 'Quyết định số'}), hide_index=True, use_container_width=True)
                 else: st.info("Chưa có dữ liệu khen thưởng / kỷ luật.")
             with t_gd:
-                # Dòng nhắc nhở mới thêm vào đây sếp nhé:
-                st.info("📌 Lưu ý: Nếu người thân đã mất, ghi 'Đã từ trần (năm...)' vào mục Nghề nghiệp / Công tác.")
-                
                 if not df_gd.empty:
                     df_gd_show = df_gd.drop(columns=['id', 'ma_cbcc', 'created_at', 'thong_tin_khac'], errors='ignore').rename(columns={
                         'loai_quan_he': 'Phân loại', 'quan_he': 'Quan hệ', 'ho_ten': 'Họ tên', 'nam_sinh': 'Năm sinh', 'que_quan_gd': 'Quê quán', 'nghe_nghiep_gd': 'Nghề nghiệp / Công tác', 'noi_o_gd': 'Nơi ở hiện nay'
                     })
                     st.dataframe(df_gd_show, hide_index=True, use_container_width=True)
-                else: 
-                    st.info("Chưa có dữ liệu quan hệ gia đình.")
+                else: st.info("Chưa có dữ liệu quan hệ gia đình.")
 
 # ==========================================
 # MODULE 4: NHẬP LIỆU & CHỈNH SỬA
@@ -855,6 +851,7 @@ elif menu in ["➕ Cập nhật Hồ sơ cá nhân", "➕ Admin: Cập nhật H�
 
     with tab_gd:
         st.info("📌 Kê khai quan hệ gia đình: bao gồm bản thân (bố, mẹ, vợ/chồng, con, anh chị em ruột) và bên vợ/chồng.")
+        st.info("📌 Lưu ý: Nếu người thân đã mất, ghi 'Đã từ trần (năm...)' vào mục Nghề nghiệp / Công tác.")
         with st.form("form_giadinh"):
             c1, c2, c3 = st.columns([1, 1, 2])
             loai_qh = c1.selectbox("Phân loại", ["Bản thân", "Bên vợ/chồng"])
