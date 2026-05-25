@@ -484,11 +484,31 @@ if menu == "📊 Dashboard":
             fig_gt.update_layout(font_family="Source Sans 3", title_font_size=15, plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
             st.plotly_chart(fig_gt, use_container_width=True)
 
-            df_ng = df['ngach_cong_chuc'].value_counts().reset_index()
-            df_ng.columns = ['Ngạch', 'Số lượng']
-            fig_ng = px.bar(df_ng, x='Ngạch', y='Số lượng', title='<b>Ngạch Công chức hiện hưởng</b>', color_discrete_sequence=['#1A2E4A'], text_auto=True)
-            fig_ng.update_layout(font_family="Source Sans 3", title_font_size=15, plot_bgcolor='rgba(248,244,239,0.5)', paper_bgcolor='rgba(0,0,0,0)', xaxis_tickangle=-20)
-            st.plotly_chart(fig_ng, use_container_width=True)
+            # Cải tiến biểu đồ ngạch công chức
+        df_ng = df['ngach_cong_chuc'].value_counts().reset_index()
+        df_ng.columns = ['Ngạch', 'Số lượng']
+        
+        # Chuyển sang bar chart ngang (h) và tăng kích thước figure
+        fig_ng = px.bar(
+            df_ng, 
+            y='Ngạch', 
+            x='Số lượng', 
+            title='<b>Ngạch Công chức hiện hưởng</b>', 
+            orientation='h',  # Cột ngang
+            color_discrete_sequence=['#1A2E4A'], 
+            text_auto=True
+        )
+        
+        # Căn chỉnh để tên ngạch không bị cắt
+        fig_ng.update_layout(
+            font_family="Source Sans 3", 
+            title_font_size=15, 
+            plot_bgcolor='rgba(248,244,239,0.5)', 
+            paper_bgcolor='rgba(0,0,0,0)',
+            yaxis={'categoryorder': 'total ascending'}, # Xếp từ ít đến nhiều
+            margin=dict(l=150, r=20, t=50, b=20) # Thêm lề trái để tên ngạch dài không bị mất
+        )
+        st.plotly_chart(fig_ng, use_container_width=True)
 
         with col2:
             df_ll = df['ly_luan_chinh_tri'].value_counts().reset_index()
