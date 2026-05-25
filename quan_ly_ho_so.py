@@ -577,53 +577,53 @@ if menu == "📊 Dashboard":
         col1, col2 = st.columns(2)
 
         with col1:
-            df_gt = df['gioi_tinh'].value_counts().reset_index()
+            # 1. Biểu đồ Giới tính (Ẩn chú thích thừa cho gọn)
+            df_gt = df[df['gioi_tinh'] != 'Chưa xác định']['gioi_tinh'].value_counts().reset_index()
             df_gt.columns = ['Giới tính', 'Số lượng']
-            fig_gt = px.pie(df_gt, values='Số lượng', names='Giới tính', hole=0.55,
-                            title='<b>Cơ cấu Giới tính</b>',
-                            color='Giới tính', color_discrete_map={'Nam': '#0A1628', 'Nữ': '#C8102E'})
-            fig_gt.update_traces(textposition='outside', textinfo='percent+label', marker=dict(line=dict(color='#fff', width=3)))
-            fig_gt.update_layout(font_family="Source Sans 3", title_font_size=15, plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
-            st.plotly_chart(fig_gt, use_container_width=True)
+            if not df_gt.empty:
+                fig_gt = px.pie(df_gt, values='Số lượng', names='Giới tính', hole=0.55,
+                                title='<b>Cơ cấu Giới tính</b>',
+                                color='Giới tính', color_discrete_map={'Nam': '#0A1628', 'Nữ': '#C8102E'})
+                fig_gt.update_traces(textposition='outside', textinfo='percent+label', marker=dict(line=dict(color='#fff', width=3)))
+                fig_gt.update_layout(font_family="Source Sans 3", title_font_size=15, plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)', showlegend=False)
+                st.plotly_chart(fig_gt, use_container_width=True)
 
-            # Cải tiến biểu đồ ngạch công chức
-        df_ng = df['ngach_cong_chuc'].value_counts().reset_index()
-        df_ng.columns = ['Ngạch', 'Số lượng']
-        
-        # Chuyển sang bar chart ngang (h) và tăng kích thước figure
-        fig_ng = px.bar(
-            df_ng, 
-            y='Ngạch', 
-            x='Số lượng', 
-            title='<b>Ngạch Công chức hiện hưởng</b>', 
-            orientation='h',  # Cột ngang
-            color_discrete_sequence=['#1A2E4A'], 
-            text_auto=True
-        )
-        
-        # Căn chỉnh để tên ngạch không bị cắt
-        fig_ng.update_layout(
-            font_family="Source Sans 3", 
-            title_font_size=15, 
-            plot_bgcolor='rgba(248,244,239,0.5)', 
-            paper_bgcolor='rgba(0,0,0,0)',
-            yaxis={'categoryorder': 'total ascending'}, # Xếp từ ít đến nhiều
-            margin=dict(l=150, r=20, t=50, b=20) # Thêm lề trái để tên ngạch dài không bị mất
-        )
-        st.plotly_chart(fig_ng, use_container_width=True)
+            # 2. Biểu đồ Ngạch công chức (Quay ngang cho tên dài không bị đè)
+            df_ng = df[df['ngach_cong_chuc'] != 'Chưa xác định']['ngach_cong_chuc'].value_counts().reset_index()
+            df_ng.columns = ['Ngạch', 'Số lượng']
+            if not df_ng.empty:
+                fig_ng = px.bar(df_ng, y='Ngạch', x='Số lượng', orientation='h', 
+                                title='<b>Ngạch Công chức hiện hưởng</b>', 
+                                color_discrete_sequence=['#1A2E4A'], text_auto=True)
+                fig_ng.update_layout(font_family="Source Sans 3", title_font_size=15, 
+                                     plot_bgcolor='rgba(248,244,239,0.5)', paper_bgcolor='rgba(0,0,0,0)', 
+                                     yaxis={'categoryorder': 'total ascending'}) # Xếp từ ít đến nhiều
+                st.plotly_chart(fig_ng, use_container_width=True)
 
         with col2:
-            df_ll = df['ly_luan_chinh_tri'].value_counts().reset_index()
+            # 3. Biểu đồ Lý luận chính trị (Quay ngang)
+            df_ll = df[df['ly_luan_chinh_tri'] != 'Chưa xác định']['ly_luan_chinh_tri'].value_counts().reset_index()
             df_ll.columns = ['Lý luận CT', 'Số lượng']
-            fig_ll = px.bar(df_ll, x='Lý luận CT', y='Số lượng', title='<b>Trình độ Lý luận Chính trị</b>', color_discrete_sequence=['#C8102E'], text_auto=True)
-            fig_ll.update_layout(font_family="Source Sans 3", title_font_size=15, plot_bgcolor='rgba(248,244,239,0.5)', paper_bgcolor='rgba(0,0,0,0)')
-            st.plotly_chart(fig_ll, use_container_width=True)
+            if not df_ll.empty:
+                fig_ll = px.bar(df_ll, y='Lý luận CT', x='Số lượng', orientation='h', 
+                                title='<b>Trình độ Lý luận Chính trị</b>', 
+                                color_discrete_sequence=['#C8102E'], text_auto=True)
+                fig_ll.update_layout(font_family="Source Sans 3", title_font_size=15, 
+                                     plot_bgcolor='rgba(248,244,239,0.5)', paper_bgcolor='rgba(0,0,0,0)',
+                                     yaxis={'categoryorder': 'total ascending'})
+                st.plotly_chart(fig_ll, use_container_width=True)
 
-            df_cm = df['trinh_do_chuyen_mon'].value_counts().reset_index()
+            # 4. Biểu đồ Chuyên môn (Quay ngang)
+            df_cm = df[df['trinh_do_chuyen_mon'] != 'Chưa xác định']['trinh_do_chuyen_mon'].value_counts().reset_index()
             df_cm.columns = ['Trình độ', 'Số lượng']
-            fig_cm = px.bar(df_cm, y='Trình độ', x='Số lượng', orientation='h', title='<b>Trình độ Chuyên môn</b>', color_discrete_sequence=['#D4AF37'], text_auto=True)
-            fig_cm.update_layout(font_family="Source Sans 3", title_font_size=15, yaxis={'categoryorder': 'total ascending'}, plot_bgcolor='rgba(248,244,239,0.5)', paper_bgcolor='rgba(0,0,0,0)')
-            st.plotly_chart(fig_cm, use_container_width=True)
+            if not df_cm.empty:
+                fig_cm = px.bar(df_cm, y='Trình độ', x='Số lượng', orientation='h', 
+                                title='<b>Trình độ Chuyên môn</b>', 
+                                color_discrete_sequence=['#D4AF37'], text_auto=True)
+                fig_cm.update_layout(font_family="Source Sans 3", title_font_size=15, 
+                                     yaxis={'categoryorder': 'total ascending'}, 
+                                     plot_bgcolor='rgba(248,244,239,0.5)', paper_bgcolor='rgba(0,0,0,0)')
+                st.plotly_chart(fig_cm, use_container_width=True)
 
         section_title("📋", "DANH SÁCH CÁN BỘ, CÔNG CHỨC")
         cols_show = ['id', 'ho_ten', 'chuc_vu', 'don_vi', 'ngay_sinh', 'gioi_tinh', 'trinh_do_chuyen_mon', 'ly_luan_chinh_tri']
