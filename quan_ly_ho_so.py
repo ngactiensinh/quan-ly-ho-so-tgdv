@@ -23,45 +23,125 @@ st.set_page_config(
 )
 
 # Thêm CSS ép sidebar luôn hiển thị nút mở rộng và phục hồi Header trên Mobile
+# ==========================================
+# 4. CSS PHONG CÁCH CHÍNH TRỊ - ĐỎ & VÀNG (ĐÃ FIX MOBILE)
+# ==========================================
 st.markdown("""
 <style>
-    /* 1. Đưa nút menu về đúng vị trí chuẩn (góc trên bên trái) */
-    [data-testid="collapsedControl"] {
-        position: fixed !important;
-        top: 15px !important;
-        left: 15px !important;
-        z-index: 999999 !important;
-        background-color: #0A1628 !important; /* Navy */
-        color: #D4AF37 !important;            /* Gold */
-        width: 45px !important;
-        height: 45px !important;
-        border-radius: 8px !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.3) !important;
-    }
+    @import url('https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700;900&family=Source+Sans+3:wght@400;500;600;700&display=swap');
 
-    /* 2. Làm nút menu nổi bật và dễ bấm */
-    [data-testid="collapsedControl"] svg {
-        fill: #D4AF37 !important;
-        width: 25px !important;
-        height: 25px !important;
+    :root {
+        --red-primary: #C8102E; --red-dark: #A00C23; --red-light: #E8203F;
+        --gold: #D4AF37; --gold-light: #F0D060; --navy: #0A1628;
+        --navy-mid: #1A2E4A; --navy-light: #2A4A70; --cream: #FDF8F0;
+        --off-white: #F5F1E8; --text-dark: #1A1A2E; --text-mid: #3D3D5C;
+        --text-light: #6B7280; --border: #D4AF3740;
+        --shadow-sm: 0 2px 8px rgba(0,0,0,0.08); --shadow-md: 0 4px 20px rgba(0,0,0,0.12); --shadow-lg: 0 8px 40px rgba(0,0,0,0.16);
     }
+    html, body, [class*="css"] { font-family: 'Source Sans 3', sans-serif; color: var(--text-dark); }
+    .stApp { background: linear-gradient(160deg, #f8f4ef 0%, #ede8e0 50%, #f5f0e8 100%); }
 
-    /* 3. Đảm bảo sidebar không bị đè bởi bất kỳ thứ gì khác */
-    [data-testid="stSidebar"] {
-        z-index: 9999999 !important;
-    }
+    /* ---- SIDEBAR ---- */
+    [data-testid="stSidebar"] { background: linear-gradient(180deg, var(--navy) 0%, var(--navy-mid) 60%, #0D1E35 100%) !important; border-right: 3px solid var(--gold) !important; z-index: 999999 !important; }
+    [data-testid="stSidebar"] * { color: #e8dfc8 !important; }
+    [data-testid="stSidebar"] .stRadio label { color: #c8bfa8 !important; padding: 10px 14px; border-radius: 6px; display: block; transition: all 0.2s; font-weight: 500; font-size: 14px; border-left: 3px solid transparent; }
+    [data-testid="stSidebar"] .stRadio label:hover { background: rgba(212,175,55,0.12) !important; border-left-color: var(--gold) !important; color: var(--gold-light) !important; }
+    [data-testid="stSidebar"] [aria-checked="true"] + label, [data-testid="stSidebar"] .stRadio [data-checked="true"] label { background: rgba(200,16,46,0.25) !important; border-left-color: var(--red-primary) !important; color: #fff !important; }
+    [data-testid="stSidebar"] hr { border-color: rgba(212,175,55,0.25) !important; }
 
-    /* 4. Giữ Header sạch sẽ, không bị vướng nút menu */
-    .gov-header {
-        padding-left: 70px !important; /* Đẩy text sang phải để không chạm nút menu */
-        position: relative;
-    }
+    /* ---- HEADER CHÍNH ---- */
+    .gov-header { background: linear-gradient(135deg, var(--navy) 0%, var(--navy-mid) 40%, var(--red-dark) 100%); border-bottom: 4px solid var(--gold); padding: 20px 32px; border-radius: 12px; margin-bottom: 28px; display: flex; align-items: center; gap: 24px; position: relative; overflow: hidden; box-shadow: var(--shadow-lg); }
+    .gov-header::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: repeating-linear-gradient(45deg, transparent, transparent 40px, rgba(212,175,55,0.03) 40px, rgba(212,175,55,0.03) 41px); }
+    .gov-header-text h1 { font-family: 'Merriweather', serif; font-size: 20px; font-weight: 900; color: #fff; margin: 0 0 4px 0; letter-spacing: 1.5px; text-transform: uppercase; text-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+    .gov-header-text .subtitle { font-size: 13px; color: var(--gold-light); margin: 0; letter-spacing: 0.5px; opacity: 0.9; }
+    .gold-bar { width: 3px; height: 60px; background: linear-gradient(180deg, var(--gold-light), var(--gold), transparent); border-radius: 2px; flex-shrink: 0; }
 
-    /* Ẩn bớt các thành phần thừa */
+    /* ---- METRIC CARDS ---- */
+    .metric-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
+    .metric-card { background: #fff; border-radius: 10px; padding: 20px 22px; border-top: 4px solid var(--red-primary); box-shadow: var(--shadow-sm); position: relative; overflow: hidden; transition: transform 0.2s, box-shadow 0.2s; }
+    .metric-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
+    .metric-card.gold { border-top-color: var(--gold); }
+    .metric-card.navy { border-top-color: var(--navy); }
+    .metric-card.green { border-top-color: #2E7D32; }
+    .metric-card::after { content: ''; position: absolute; bottom: -20px; right: -20px; width: 80px; height: 80px; border-radius: 50%; background: rgba(200,16,46,0.04); }
+    .metric-card .m-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-light); margin-bottom: 8px; }
+    .metric-card .m-value { font-family: 'Merriweather', serif; font-size: 38px; font-weight: 900; color: var(--red-primary); line-height: 1; }
+    .metric-card.gold .m-value { color: #B8860B; }
+    .metric-card.navy .m-value { color: var(--navy-mid); }
+    .metric-card.green .m-value { color: #2E7D32; }
+    .metric-card .m-sub { font-size: 12px; color: var(--text-light); margin-top: 5px; }
+
+    /* ---- PROFILE CARD ---- */
+    .profile-card { background: #fff; border-radius: 12px; padding: 28px 32px; margin: 20px 0; box-shadow: var(--shadow-md); border-left: 6px solid var(--red-primary); position: relative; overflow: hidden; }
+    .profile-card::before { content: ''; position: absolute; top: 0; right: 0; width: 120px; height: 120px; background: linear-gradient(135deg, rgba(200,16,46,0.04), rgba(212,175,55,0.06)); border-radius: 0 0 0 120px; }
+    .profile-badge { display: inline-block; background: var(--red-primary); color: #fff; font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; padding: 3px 10px; border-radius: 12px; margin-bottom: 10px; }
+    .profile-name { font-family: 'Merriweather', serif; font-size: 24px; font-weight: 900; color: var(--navy); letter-spacing: 0.5px; margin-bottom: 4px; text-transform: uppercase; }
+    .profile-title { color: var(--red-primary); font-size: 15px; font-weight: 600; margin-bottom: 18px; }
+    .profile-divider { border: none; border-top: 1px dashed rgba(200,16,46,0.2); margin: 16px 0; }
+    .profile-info-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+    .info-item { display: flex; flex-direction: column; gap: 2px; background: #FAF7F2; padding: 8px 12px; border-radius: 6px; border: 1px solid #EFEAE2; }
+    .info-item .lbl { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-light); }
+    .info-item .val { font-size: 14px; font-weight: 600; color: var(--text-dark); }
+
+    /* ---- DATA TABLE OVERRIDE ---- */
+    [data-testid="stDataFrame"] thead th { background-color: var(--navy) !important; color: #fff !important; font-weight: 700 !important; font-size: 13px !important; letter-spacing: 0.5px !important; }
+    [data-testid="stDataFrame"] tbody tr:hover { background: rgba(200,16,46,0.04) !important; }
+
+    /* ---- FORMS ---- */
+    div[data-testid="stForm"] { background: #fff; border: 1px solid rgba(212,175,55,0.25); border-top: 3px solid var(--gold); border-radius: 10px; padding: 24px !important; box-shadow: var(--shadow-sm); }
+    .stTextInput input, .stSelectbox select, .stTextArea textarea { border: 1.5px solid #e0d8cc !important; border-radius: 6px !important; background: var(--cream) !important; font-family: 'Source Sans 3', sans-serif !important; transition: border-color 0.2s !important; }
+    .stTextInput input:focus, .stSelectbox select:focus, .stTextArea textarea:focus { border-color: var(--red-primary) !important; box-shadow: 0 0 0 3px rgba(200,16,46,0.08) !important; }
+
+    /* ---- BUTTONS ---- */
+    div[data-testid="stButton"] > button, div[data-testid="stFormSubmitButton"] > button, div[data-testid="stDownloadButton"] > button { background: linear-gradient(135deg, var(--red-primary), var(--red-dark)) !important; color: #fff !important; border: none !important; font-family: 'Source Sans 3', sans-serif !important; font-weight: 700 !important; font-size: 13px !important; letter-spacing: 0.8px !important; text-transform: uppercase !important; padding: 10px 20px !important; border-radius: 6px !important; box-shadow: 0 3px 12px rgba(200,16,46,0.3) !important; transition: all 0.25s ease !important; }
+    div[data-testid="stButton"] > button:hover, div[data-testid="stFormSubmitButton"] > button:hover, div[data-testid="stDownloadButton"] > button:hover { background: linear-gradient(135deg, var(--red-light), var(--red-primary)) !important; box-shadow: 0 5px 18px rgba(200,16,46,0.4) !important; transform: translateY(-1px) !important; }
+
+    /* ---- TABS ---- */
+    .stTabs [data-baseweb="tab-list"] { background: transparent !important; border-bottom: 2px solid rgba(200,16,46,0.15) !important; gap: 4px !important; }
+    .stTabs [data-baseweb="tab"] { font-family: 'Source Sans 3', sans-serif !important; font-weight: 600 !important; font-size: 13px !important; color: var(--text-mid) !important; padding: 10px 18px !important; border-radius: 6px 6px 0 0 !important; border: none !important; background: transparent !important; transition: all 0.2s !important; }
+    .stTabs [aria-selected="true"] { color: var(--red-primary) !important; background: rgba(200,16,46,0.06) !important; border-bottom: 3px solid var(--red-primary) !important; }
+
+    /* ---- EXPANDER ---- */
+    [data-testid="stExpander"] summary { font-weight: 600 !important; color: var(--navy-mid) !important; background: var(--off-white) !important; border-left: 4px solid var(--gold) !important; border-radius: 6px !important; padding: 12px 16px !important; }
+    
+    /* Ẩn các thành phần không cần thiết */
     #MainMenu, footer { visibility: hidden !important; }
+    
+    /* --------------------------------------------------- */
+    /* 💡 CHIÊU CUỐI: FIX TRIỆT ĐỂ LỖI GIAO DIỆN MOBILE    */
+    /* --------------------------------------------------- */
+    @media screen and (max-width: 768px) {
+        /* 1. Đánh thức thanh Header chứa Menu dậy, tô màu cho sang trọng */
+        header[data-testid="stHeader"] {
+            visibility: visible !important;
+            background-color: #0A1628 !important; /* Xanh Navy */
+            border-bottom: 2px solid #D4AF37 !important; /* Vạch Vàng Gold */
+        }
+        
+        /* 2. Đổi màu biểu tượng Hamburger Menu sang Vàng Gold */
+        header[data-testid="stHeader"] svg {
+            fill: #D4AF37 !important;
+            width: 25px !important;
+            height: 25px !important;
+        }
+
+        /* 3. Khẽ đẩy cái Banner xuống một nhịp để không đội lên Header */
+        .gov-header {
+            margin-top: 3.5rem !important; /* Đẩy xuống */
+            flex-direction: column !important; /* Đẩy logo và chữ nằm dọc */
+            text-align: center !important;
+            padding: 15px !important;
+            gap: 10px !important;
+        }
+        
+        /* 4. Định dạng lại thanh vạch dọc trên mobile thành vạch ngang */
+        .gold-bar {
+            width: 80px !important;
+            height: 3px !important;
+            background: linear-gradient(90deg, #F0D060, #D4AF37, transparent) !important;
+            margin: 0 auto !important;
+        }
+    }
 </style>
 """, unsafe_allow_html=True)
 
