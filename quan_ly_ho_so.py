@@ -667,6 +667,7 @@ elif menu in ["➕ Cập nhật Hồ sơ cá nhân", "➕ Admin: Cập nhật H�
             if c2.button("🗑️ XÓA", key=f"b_{f_key}", use_container_width=True) and del_id != "—":
                 supabase.table(table).delete().eq("id", del_id).execute(); st.rerun()
         else: st.info("Chưa có dữ liệu.")
+            
     with tab_ct: crud_tab("lich_su_cong_tac", "ct", "Công tác", [("tu_ngay","Từ"), ("den_ngay","Đến"), ("vi_tri","Vị trí"), ("don_vi","Đơn vị"), ("quyet_dinh_so","Số QĐ")])
     with tab_luong: crud_tab("dien_bien_luong", "l", "Lương", [("ngay_quyet_dinh","Ngày QĐ"), ("bac_luong","Bậc"), ("he_so","Hệ số"), ("quyet_dinh_so","Số QĐ")])
     with tab_kt: crud_tab("khen_thuong_ky_luat", "kt", "KT/KL", [("ngay_quyet_dinh","Ngày QĐ"), ("loai","Loại (Khen thưởng/Kỷ luật)"), ("noi_dung","Nội dung"), ("quyet_dinh_so","Số QĐ")])
