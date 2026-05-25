@@ -637,19 +637,37 @@ elif menu in ["➕ Cập nhật Hồ sơ cá nhân", "➕ Admin: Cập nhật H�
             st.write(f"**Thêm {title}**")
             vals = {fname: st.text_input(flabel) for fname, flabel in cols}
             if st.form_submit_button(f"➕ THÊM", use_container_width=True):
-                supabase.table(table).insert({"ma_cbcc": target_id, **vals}).execute(); st.success("Xong!"); st.rerun()
-        try: df_sub = pd.DataFrame(supabase.table(table).select("*").eq("ma_cbcc", target_id).execute().data)
+                supabase.table(table).insert({"ma_cbcc": target_id, **vals}).execute(); st.rerun()
+
+        try: 
+            raw_data = supabase.table(table).select("*").eq("ma_cbcc", target_id).order("id").execute().data
+            df_sub = pd.DataFrame(raw_data)
         except: df_sub = pd.DataFrame()
+
         if not df_sub.empty:
-            ed = st.data_editor(df_sub.drop(columns=['ma_cbcc', 'created_at'], errors='ignore'), hide_index=True, use_container_width=True, disabled=["id"])
+            # GIỮ LẠI CỘT 'id' ĐỂ KHÔNG BỊ LỖI, CHỈ BỎ CÁC CỘT HỆ THỐNG
+            df_show = df_sub.drop(columns=['ma_cbcc', 'created_at'], errors='ignore')
+            
+            # Đưa id ra cột đầu tiên cho dễ nhìn
+            cols_order = ['id'] + [c for c in df_show.columns if c != 'id']
+            df_show = df_show[cols_order]
+            
+            # Bỏ disabled=["id"] vì giờ 'id' đã nằm trong bảng, không lo lỗi nữa
+            ed = st.data_editor(df_show, hide_index=True, use_container_width=True)
+            
             c1, c2 = st.columns([3,1])
-            if c1.button("💾 LƯU", key=f"s_{f_key}", use_container_width=True):
-                upd = ed.copy(); upd['ma_cbcc'] = target_id
-                supabase.table(table).upsert(upd.fillna("").to_dict(orient="records")).execute(); st.rerun()
+            if c1.button("💾 LƯU THAY ĐỔI", key=f"s_{f_key}", use_container_width=True):
+                # Update từng dòng dựa vào 'id'
+                for i in range(len(ed)):
+                    row_data = ed.iloc[i].to_dict()
+                    row_id = row_data.pop('id') # Lấy id ra để làm điều kiện update
+                    supabase.table(table).update(row_data).eq("id", row_id).execute()
+                st.success("✅ Đã cập nhật!"); st.rerun()
+            
             del_id = c2.selectbox("Xóa ID:", ["—"] + df_sub['id'].astype(str).tolist(), label_visibility="collapsed", key=f"d_{f_key}")
             if c2.button("🗑️ XÓA", key=f"b_{f_key}", use_container_width=True) and del_id != "—":
                 supabase.table(table).delete().eq("id", del_id).execute(); st.rerun()
-        else: st.info("Trống.")
+        else: st.info("Chưa có dữ liệu.")
 
     with tab_ct: crud_tab("lich_su_cong_tac", "ct", "Công tác", [("tu_ngay","Từ"), ("den_ngay","Đến"), ("vi_tri","Vị trí"), ("don_vi","Đơn vị"), ("quyet_dinh_so","Số QĐ")])
     with tab_luong: crud_tab("dien_bien_luong", "l", "Lương", [("ngay_quyet_dinh","Ngày QĐ"), ("bac_luong","Bậc"), ("he_so","Hệ số"), ("quyet_dinh_so","Số QĐ")])
