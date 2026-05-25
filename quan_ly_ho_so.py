@@ -1,6 +1,6 @@
 """
-HỆ THỐNG QUẢN LÝ HỒ SƠ CÁN BỘ, CÔNG CHỨC - PHIÊN BẢN V6.4 (PRO MAX)
-Tối ưu: Giao diện Mobile, Biểu đồ ngang Plotly, Bảng chỉ tiêu HTML, Lọc dữ liệu rác.
+HỆ THỐNG QUẢN LÝ HỒ SƠ CÁN BỘ, CÔNG CHỨC - PHIÊN BẢN V7.0 (DASHBOARD TỐI ƯU)
+Đã cập nhật: Dashboard đầy đủ biểu đồ Giới tính, Chuyên môn, Ngạch CC, Lý luận CT, Học vị
 """
 
 import streamlit as st
@@ -11,10 +11,9 @@ import plotly.graph_objects as go
 import base64
 import os
 from datetime import datetime
-import re
 
 # ==========================================
-# 1. CẤU HÌNH TRANG (BẮT BUỘC Ở ĐẦU)
+# 1. CẤU HÌNH TRANG
 # ==========================================
 st.set_page_config(
     page_title="Hồ sơ CBCC - Ban Tuyên giáo & Dân vận Tuyên Quang",
@@ -23,9 +22,6 @@ st.set_page_config(
     initial_sidebar_state="auto"
 )
 
-# ==========================================
-# 2. CSS PHONG CÁCH CHÍNH TRỊ & FIX MOBILE
-# ==========================================
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700;900&family=Source+Sans+3:wght@400;500;600;700&display=swap');
@@ -35,44 +31,31 @@ st.markdown("""
         --gold: #D4AF37; --gold-light: #F0D060; --navy: #0A1628;
         --navy-mid: #1A2E4A; --navy-light: #2A4A70; --cream: #FDF8F0;
         --off-white: #F5F1E8; --text-dark: #1A1A2E; --text-mid: #3D3D5C;
-        --text-light: #6B7280;
-        --shadow-sm: 0 2px 8px rgba(0,0,0,0.08); --shadow-md: 0 4px 20px rgba(0,0,0,0.12); --shadow-lg: 0 8px 40px rgba(0,0,0,0.16);
+        --text-light: #6B7280; --border: #D4AF3740;
+        --shadow-sm: 0 2px 8px rgba(0,0,0,0.08);
+        --shadow-md: 0 4px 20px rgba(0,0,0,0.12);
+        --shadow-lg: 0 8px 40px rgba(0,0,0,0.16);
     }
     html, body, [class*="css"] { font-family: 'Source Sans 3', sans-serif; color: var(--text-dark); }
     .stApp { background: linear-gradient(160deg, #f8f4ef 0%, #ede8e0 50%, #f5f0e8 100%); }
 
-    /* ---- FIXED MOBILE MENU BUTTON ---- */
-    [data-testid="collapsedControl"] {
-        position: fixed !important;
-        top: 15px !important;
-        left: 15px !important;
-        z-index: 999999 !important;
-        background-color: #0A1628 !important; /* Navy */
-        width: 45px !important; height: 45px !important;
-        border-radius: 8px !important;
-        display: flex !important; align-items: center !important; justify-content: center !important;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.3) !important;
-        visibility: visible !important;
-    }
-    [data-testid="collapsedControl"] svg {
-        fill: #D4AF37 !important; /* Gold */
-        width: 25px !important; height: 25px !important;
-    }
-
     /* ---- SIDEBAR ---- */
-    [data-testid="stSidebar"] { background: linear-gradient(180deg, var(--navy) 0%, var(--navy-mid) 60%, #0D1E35 100%) !important; border-right: 3px solid var(--gold) !important; z-index: 9999999 !important; }
+    [data-testid="stSidebar"] { background: linear-gradient(180deg, var(--navy) 0%, var(--navy-mid) 60%, #0D1E35 100%) !important; border-right: 3px solid var(--gold) !important; z-index: 999999 !important; }
     [data-testid="stSidebar"] * { color: #e8dfc8 !important; }
     [data-testid="stSidebar"] .stRadio label { color: #c8bfa8 !important; padding: 10px 14px; border-radius: 6px; display: block; transition: all 0.2s; font-weight: 500; font-size: 14px; border-left: 3px solid transparent; }
     [data-testid="stSidebar"] .stRadio label:hover { background: rgba(212,175,55,0.12) !important; border-left-color: var(--gold) !important; color: var(--gold-light) !important; }
-    [data-testid="stSidebar"] [aria-checked="true"] + label, [data-testid="stSidebar"] .stRadio [data-checked="true"] label { background: rgba(200,16,46,0.25) !important; border-left-color: var(--red-primary) !important; color: #fff !important; }
     [data-testid="stSidebar"] hr { border-color: rgba(212,175,55,0.25) !important; }
 
     /* ---- HEADER CHÍNH ---- */
-    .gov-header { background: linear-gradient(135deg, var(--navy) 0%, var(--navy-mid) 40%, var(--red-dark) 100%); border-bottom: 4px solid var(--gold); padding: 20px 32px; border-radius: 12px; margin-bottom: 28px; display: flex; align-items: center; gap: 24px; position: relative; overflow: hidden; box-shadow: var(--shadow-lg); padding-left: 70px !important; }
+    .gov-header { background: linear-gradient(135deg, var(--navy) 0%, var(--navy-mid) 40%, var(--red-dark) 100%); border-bottom: 4px solid var(--gold); padding: 20px 32px; border-radius: 12px; margin-bottom: 28px; display: flex; align-items: center; gap: 24px; position: relative; overflow: hidden; box-shadow: var(--shadow-lg); }
     .gov-header::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: repeating-linear-gradient(45deg, transparent, transparent 40px, rgba(212,175,55,0.03) 40px, rgba(212,175,55,0.03) 41px); }
     .gov-header-text h1 { font-family: 'Merriweather', serif; font-size: 20px; font-weight: 900; color: #fff; margin: 0 0 4px 0; letter-spacing: 1.5px; text-transform: uppercase; text-shadow: 0 2px 8px rgba(0,0,0,0.3); }
     .gov-header-text .subtitle { font-size: 13px; color: var(--gold-light); margin: 0; letter-spacing: 0.5px; opacity: 0.9; }
     .gold-bar { width: 3px; height: 60px; background: linear-gradient(180deg, var(--gold-light), var(--gold), transparent); border-radius: 2px; flex-shrink: 0; }
+
+    /* ---- SECTION TITLE ---- */
+    .section-title { font-family: 'Merriweather', serif; font-size: 17px; font-weight: 700; color: var(--navy); display: flex; align-items: center; gap: 10px; margin: 24px 0 16px 0; padding-bottom: 10px; border-bottom: 2px solid var(--red-primary); }
+    .section-title::before { content: ''; display: block; width: 5px; height: 22px; background: var(--gold); border-radius: 3px; }
 
     /* ---- METRIC CARDS ---- */
     .metric-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
@@ -101,36 +84,64 @@ st.markdown("""
     .info-item .lbl { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-light); }
     .info-item .val { font-size: 14px; font-weight: 600; color: var(--text-dark); }
 
-    /* ---- FORMS & BUTTONS ---- */
-    div[data-testid="stForm"] { background: #fff; border: 1px solid rgba(212,175,55,0.25); border-top: 3px solid var(--gold); border-radius: 10px; padding: 24px !important; box-shadow: var(--shadow-sm); }
-    div[data-testid="stButton"] > button, div[data-testid="stFormSubmitButton"] > button, div[data-testid="stDownloadButton"] > button { background: linear-gradient(135deg, var(--red-primary), var(--red-dark)) !important; color: #fff !important; border: none !important; font-weight: 700 !important; font-size: 13px !important; letter-spacing: 0.8px !important; text-transform: uppercase !important; padding: 10px 20px !important; border-radius: 6px !important; box-shadow: 0 3px 12px rgba(200,16,46,0.3) !important; transition: all 0.25s ease !important; }
-    div[data-testid="stButton"] > button:hover { background: linear-gradient(135deg, var(--red-light), var(--red-primary)) !important; transform: translateY(-1px) !important; }
+    /* ---- DATA TABLE ---- */
+    [data-testid="stDataFrame"] thead th { background-color: var(--navy) !important; color: #fff !important; font-weight: 700 !important; font-size: 13px !important; letter-spacing: 0.5px !important; }
+    [data-testid="stDataFrame"] tbody tr:hover { background: rgba(200,16,46,0.04) !important; }
 
-    /* Ẩn các thành phần thừa */
+    /* ---- FORMS ---- */
+    div[data-testid="stForm"] { background: #fff; border: 1px solid rgba(212,175,55,0.25); border-top: 3px solid var(--gold); border-radius: 10px; padding: 24px !important; box-shadow: var(--shadow-sm); }
+    .stTextInput input, .stSelectbox select, .stTextArea textarea { border: 1.5px solid #e0d8cc !important; border-radius: 6px !important; background: var(--cream) !important; font-family: 'Source Sans 3', sans-serif !important; transition: border-color 0.2s !important; }
+    .stTextInput input:focus, .stSelectbox select:focus, .stTextArea textarea:focus { border-color: var(--red-primary) !important; box-shadow: 0 0 0 3px rgba(200,16,46,0.08) !important; }
+
+    /* ---- BUTTONS ---- */
+    div[data-testid="stButton"] > button,
+    div[data-testid="stFormSubmitButton"] > button,
+    div[data-testid="stDownloadButton"] > button {
+        background: linear-gradient(135deg, var(--red-primary), var(--red-dark)) !important;
+        color: #fff !important; border: none !important;
+        font-family: 'Source Sans 3', sans-serif !important; font-weight: 700 !important;
+        font-size: 13px !important; letter-spacing: 0.8px !important; text-transform: uppercase !important;
+        padding: 10px 20px !important; border-radius: 6px !important;
+        box-shadow: 0 3px 12px rgba(200,16,46,0.3) !important; transition: all 0.25s ease !important;
+    }
+    div[data-testid="stButton"] > button:hover,
+    div[data-testid="stFormSubmitButton"] > button:hover,
+    div[data-testid="stDownloadButton"] > button:hover {
+        background: linear-gradient(135deg, var(--red-light), var(--red-primary)) !important;
+        box-shadow: 0 5px 18px rgba(200,16,46,0.4) !important; transform: translateY(-1px) !important;
+    }
+
+    /* ---- TABS ---- */
+    .stTabs [data-baseweb="tab-list"] { background: transparent !important; border-bottom: 2px solid rgba(200,16,46,0.15) !important; gap: 4px !important; }
+    .stTabs [data-baseweb="tab"] { font-family: 'Source Sans 3', sans-serif !important; font-weight: 600 !important; font-size: 13px !important; color: var(--text-mid) !important; padding: 10px 18px !important; border-radius: 6px 6px 0 0 !important; border: none !important; background: transparent !important; transition: all 0.2s !important; }
+    .stTabs [aria-selected="true"] { color: var(--red-primary) !important; background: rgba(200,16,46,0.06) !important; border-bottom: 3px solid var(--red-primary) !important; }
+
+    /* ---- EXPANDER ---- */
+    [data-testid="stExpander"] summary { font-weight: 600 !important; color: var(--navy-mid) !important; background: var(--off-white) !important; border-left: 4px solid var(--gold) !important; border-radius: 6px !important; padding: 12px 16px !important; }
+
     #MainMenu, footer { visibility: hidden !important; }
-    header { background-color: transparent !important; }
     .block-container { padding-top: 24px !important; padding-bottom: 40px !important; }
 
-    /* ---- MOBILE RESPONSIVE ---- */
+    /* ---- MOBILE FIX ---- */
     @media screen and (max-width: 768px) {
         header[data-testid="stHeader"] { visibility: visible !important; background-color: #0A1628 !important; border-bottom: 2px solid #D4AF37 !important; }
         header[data-testid="stHeader"] svg { fill: #D4AF37 !important; width: 25px !important; height: 25px !important; }
-        .gov-header { margin-top: 3.5rem !important; flex-direction: column !important; text-align: center !important; padding: 15px !important; padding-left: 15px !important; gap: 10px !important; }
+        .gov-header { margin-top: 3.5rem !important; flex-direction: column !important; text-align: center !important; padding: 15px !important; gap: 10px !important; }
         .gold-bar { width: 80px !important; height: 3px !important; background: linear-gradient(90deg, #F0D060, #D4AF37, transparent) !important; margin: 0 auto !important; }
-        .metric-grid { grid-template-columns: 1fr 1fr; }
+        .metric-grid { grid-template-columns: repeat(2, 1fr) !important; }
     }
 </style>
 """, unsafe_allow_html=True)
 
 # ==========================================
-# 3. KẾT NỐI SUPABASE & LOG TRUY CẬP
+# 2. SUPABASE
 # ==========================================
 try:
     SUPABASE_URL = st.secrets["SUPABASE_URL"]
     SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
     supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 except Exception as e:
-    st.error("⚠️ Lỗi kết nối cơ sở dữ liệu. Vui lòng kiểm tra cấu hình Secrets.")
+    st.error("⚠️ Lỗi kết nối cơ sở dữ liệu. Vui lòng kiểm tra lại cấu hình Secrets!")
     st.stop()
 
 def log_access(app_name):
@@ -139,7 +150,9 @@ def log_access(app_name):
         try:
             supabase.table("thong_ke_truy_cap").insert({"ten_app": app_name}).execute()
             st.session_state[key_name] = True
-        except: pass
+        except:
+            pass
+
 log_access("Quản lý Hồ sơ CBCC")
 
 def get_logo_html(height="80px"):
@@ -148,34 +161,49 @@ def get_logo_html(height="80px"):
         with open(logo_path, "rb") as f:
             data = base64.b64encode(f.read()).decode("utf-8")
             return f'<img src="data:image/png;base64,{data}" style="height: {height}; filter: drop-shadow(0 2px 8px rgba(0,0,0,0.3));">'
-    return f'<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/Qu%E1%BB%91c_huy_Vi%E1%BB%87t_Nam.svg/250px-Qu%E1%BB%91c_huy_Vi%E1%BB%87t_Nam.svg.png" style="height: {height}; filter: drop-shadow(0 2px 8px rgba(0,0,0,0.3));">'
+    url = "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/Qu%E1%BB%91c_huy_Vi%E1%BB%87t_Nam.svg/250px-Qu%E1%BB%91c_huy_Vi%E1%BB%87t_Nam.svg.png"
+    return f'<img src="{url}" style="height: {height}; filter: drop-shadow(0 2px 8px rgba(0,0,0,0.3));">'
 
 # ==========================================
-# 4. DANH MỤC CHUẨN HÓA
+# 3. DANH MỤC CHUẨN HÓA
 # ==========================================
-DS_DON_VI = ["Lãnh đạo Ban", "Văn phòng Ban", "Phòng Lý luận chính trị, Lịch sử Đảng", "Phòng Tuyên truyền, Báo chí - Xuất bản", "Phòng Khoa giáo, Văn hóa - Văn nghệ", "Phòng Dân vận các cơ quan Nhà nước, dân tộc và tôn giáo", "Phòng Đoàn thể và các Hội"]
-DS_CHUC_VU = ["Trưởng Ban", "Phó Trưởng ban Thường trực", "Phó Trưởng Ban", "Chánh Văn phòng", "Phó Chánh Văn phòng", "Trưởng phòng", "Phó Trưởng phòng", "Chuyên viên chính", "Chuyên viên", "Văn thư viên", "Văn thư viên Trung cấp", "Kế toán viên", "Kế toán viên trung cấp", "Nhân viên lái xe", "Nhân viên phục vụ"]
+DS_DON_VI = [
+    "Lãnh đạo Ban", "Văn phòng Ban", "Phòng Lý luận chính trị, Lịch sử Đảng",
+    "Phòng Tuyên truyền, Báo chí - Xuất bản", "Phòng Khoa giáo, Văn hóa - Văn nghệ",
+    "Phòng Dân vận các cơ quan Nhà nước, dân tộc và tôn giáo", "Phòng Đoàn thể và các Hội"
+]
+DS_CHUC_VU = [
+    "Trưởng Ban", "Phó Trưởng ban Thường trực", "Phó Trưởng Ban", "Chánh Văn phòng",
+    "Phó Chánh Văn phòng", "Trưởng phòng", "Phó Trưởng phòng", "Chuyên viên chính",
+    "Chuyên viên", "Văn thư viên", "Văn thư viên Trung cấp", "Kế toán viên",
+    "Kế toán viên trung cấp", "Nhân viên lái xe", "Nhân viên phục vụ"
+]
 DS_GIOI_TINH = ["Nam", "Nữ"]
 DS_LY_LUAN = ["Chưa qua đào tạo", "Sơ cấp", "Trung cấp", "Cao cấp", "Cử nhân"]
 
 # ==========================================
-# 5. SESSION STATE & ĐĂNG NHẬP
+# 4. SESSION STATE
 # ==========================================
-defaults = {"logged_in": False, "ma_cbcc": "", "ho_ten": "", "role": "User", "edit_target_id": "", "menu_selection": ""}
+defaults = {
+    "logged_in": False, "ma_cbcc": "", "ho_ten": "",
+    "role": "User", "edit_target_id": "", "menu_selection": ""
+}
 for k, v in defaults.items():
     if k not in st.session_state:
         st.session_state[k] = v
 
+# ==========================================
+# 5. ĐĂNG NHẬP
+# ==========================================
 if not st.session_state["logged_in"]:
     st.markdown(f"""
     <div style="max-width:900px; margin: 0 auto 32px auto;">
-        <div style="background: linear-gradient(135deg, var(--navy, #0A1628) 0%, #1A2E4A 50%, #C8102E 100%);
+        <div style="background: linear-gradient(135deg, #0A1628 0%, #1A2E4A 50%, #C8102E 100%);
             padding: 28px 36px; border-radius: 14px; display:flex; align-items:center;
-            gap: 24px; box-shadow: 0 8px 40px rgba(0,0,0,0.18); border-bottom: 4px solid #D4AF37;
-            position:relative; overflow:hidden;">
+            gap: 24px; box-shadow: 0 8px 40px rgba(0,0,0,0.18); border-bottom: 4px solid #D4AF37; position:relative; overflow:hidden;">
             <div style="position:relative;">{get_logo_html("90px")}</div>
             <div style="width:3px;height:70px;background:linear-gradient(180deg,#F0D060,#D4AF37,transparent);border-radius:2px;flex-shrink:0;"></div>
-            <div style="position:relative;">
+            <div>
                 <div style="font-size:11px;color:#D4AF37;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;">Tỉnh ủy Tuyên Quang</div>
                 <div style="font-family:'Georgia',serif;font-size:22px;font-weight:900;color:#fff;letter-spacing:1.5px;text-transform:uppercase;line-height:1.2;margin-bottom:6px;">Hệ thống Quản lý Hồ sơ</div>
                 <div style="font-size:15px;color:#e8dfc8;font-weight:600;">Ban Tuyên giáo và Dân vận</div>
@@ -187,6 +215,7 @@ if not st.session_state["logged_in"]:
     col1, col2, col3 = st.columns([1, 2.2, 1])
     with col2:
         tab_login, tab_register = st.tabs(["🔐  Đăng nhập hệ thống", "📝  Đăng ký tài khoản"])
+
         with tab_login:
             with st.form("login_form"):
                 st.markdown("##### Mã cán bộ")
@@ -200,11 +229,11 @@ if not st.session_state["logged_in"]:
                     else:
                         try:
                             user_data = supabase.table("tai_khoan").select("*").eq("ma_cbcc", log_ma).execute().data
-                            if user_data:
+                            if len(user_data) > 0:
                                 user = user_data[0]
                                 if user['mat_khau'] == log_pass:
                                     if user['trang_thai'] == 'Chờ duyệt':
-                                        st.warning("⏳ Tài khoản đang chờ duyệt.")
+                                        st.warning("⏳ Tài khoản đang chờ quản trị viên phê duyệt.")
                                     else:
                                         st.session_state.update({
                                             "logged_in": True, "ma_cbcc": user['ma_cbcc'],
@@ -212,14 +241,17 @@ if not st.session_state["logged_in"]:
                                             "menu_selection": "📊 Dashboard" if user['phan_quyen'] == 'Admin' else "🔍 Hồ sơ của tôi"
                                         })
                                         st.rerun()
-                                else: st.error("❌ Sai mật khẩu.")
-                            else: st.error("❌ Không tìm thấy Mã CBCC.")
-                        except Exception as e: st.error(f"Lỗi kết nối: {e}")
+                                else:
+                                    st.error("❌ Sai mật khẩu.")
+                            else:
+                                st.error("❌ Không tìm thấy Mã CBCC này trong hệ thống.")
+                        except Exception as e:
+                            st.error(f"Lỗi kết nối: {e}")
 
         with tab_register:
             with st.form("register_form"):
                 c1, c2 = st.columns(2)
-                reg_ma = c1.text_input("Mã CBCC *").strip().upper()
+                reg_ma = c1.text_input("Mã CBCC *", placeholder="VD: CV099").strip().upper()
                 reg_name = c2.text_input("Họ và tên *")
                 reg_cv = st.selectbox("Chức vụ", DS_CHUC_VU)
                 reg_dv = st.selectbox("Đơn vị công tác", DS_DON_VI)
@@ -227,19 +259,22 @@ if not st.session_state["logged_in"]:
                 reg_pass = cp1.text_input("Mật khẩu *", type="password")
                 reg_pass2 = cp2.text_input("Xác nhận Mật khẩu *", type="password")
                 if st.form_submit_button("📩  GỬI YÊU CẦU ĐĂNG KÝ", use_container_width=True):
-                    if not reg_ma or not reg_name or not reg_pass: st.error("⚠️ Điền đủ các trường bắt buộc (*).")
-                    elif reg_pass != reg_pass2: st.error("⚠️ Mật khẩu không khớp.")
+                    if not reg_ma or not reg_name or not reg_pass:
+                        st.error("⚠️ Vui lòng điền đầy đủ các trường bắt buộc (*).")
+                    elif reg_pass != reg_pass2:
+                        st.error("⚠️ Mật khẩu xác nhận không khớp.")
                     else:
                         try:
-                            if supabase.table("tai_khoan").select("ma_cbcc").eq("ma_cbcc", reg_ma).execute().data:
-                                st.error("⚠️ Mã CBCC đã tồn tại.")
+                            if len(supabase.table("tai_khoan").select("ma_cbcc").eq("ma_cbcc", reg_ma).execute().data) > 0:
+                                st.error("⚠️ Mã CBCC này đã được đăng ký.")
                             else:
                                 supabase.table("tai_khoan").insert({
                                     "ma_cbcc": reg_ma, "mat_khau": reg_pass,
                                     "ho_ten": reg_name.title(), "chuc_vu": reg_cv, "don_vi": reg_dv
                                 }).execute()
-                                st.success("✅ Đã gửi yêu cầu đăng ký.")
-                        except Exception as e: st.error(f"Lỗi: {e}")
+                                st.success("✅ Đã gửi yêu cầu. Vui lòng chờ phê duyệt.")
+                        except Exception as e:
+                            st.error(f"Lỗi: {e}")
     st.stop()
 
 # ==========================================
@@ -248,28 +283,53 @@ if not st.session_state["logged_in"]:
 with st.sidebar:
     st.markdown(f"<div style='text-align:center;padding:20px 0 16px;'>{get_logo_html('90px')}</div>", unsafe_allow_html=True)
     st.markdown(f"""
-    <div class="user-chip" style="background:rgba(255,255,255,0.1); padding:10px; border-radius:8px; text-align:center; margin-bottom:15px;">
-        <div style="font-weight:bold; color:#fff; font-size:16px;">👤 {st.session_state['ho_ten']}</div>
-        <div style="color:#D4AF37; font-size:12px; margin-top:5px;">{'QUẢN TRỊ VIÊN' if st.session_state['role']=='Admin' else 'CÁN BỘ'}</div>
+    <div style="background:rgba(212,175,55,0.1);border:1px solid rgba(212,175,55,0.25);
+        border-radius:8px;padding:12px 14px;margin-bottom:12px;">
+        <div style="font-weight:700;font-size:14px;">👤 {st.session_state['ho_ten']}</div>
+        <div style="margin-top:4px;">
+            <span style="background:{'#C8102E' if st.session_state['role']=='Admin' else '#1A2E4A'};
+                color:#fff;font-size:10px;font-weight:700;letter-spacing:1px;
+                text-transform:uppercase;padding:2px 8px;border-radius:10px;">
+                {'QUẢN TRỊ VIÊN' if st.session_state['role']=='Admin' else 'CÁN BỘ'}
+            </span>
+        </div>
     </div>
     """, unsafe_allow_html=True)
 
     if st.button("🚪  Đăng xuất", use_container_width=True):
-        for key in list(defaults.keys()): st.session_state[key] = defaults[key]
+        for key in list(defaults.keys()):
+            st.session_state[key] = defaults[key]
         st.rerun()
 
     st.markdown("---")
+    st.markdown("<div style='font-size:10px;color:rgba(212,175,55,0.5);letter-spacing:1.5px;text-transform:uppercase;padding:0 4px;margin-bottom:8px;'>Chức năng</div>", unsafe_allow_html=True)
+
     is_admin = st.session_state["role"] == "Admin"
-    menu_opts = ["📊 Dashboard", "🛡️ Admin: Duyệt Tài khoản", "🔍 Tra cứu & Xem Hồ sơ", "➕ Admin: Cập nhật Hồ sơ (Tất cả)"] if is_admin else ["🔍 Hồ sơ của tôi", "➕ Cập nhật Hồ sơ cá nhân"]
-    
-    if st.session_state["menu_selection"] not in menu_opts: st.session_state["menu_selection"] = menu_opts[0]
-    menu = st.radio("Chức năng", menu_opts, index=menu_opts.index(st.session_state["menu_selection"]), label_visibility="collapsed")
+    if is_admin:
+        menu_options = ["📊 Dashboard", "🛡️ Admin: Duyệt Tài khoản", "🔍 Tra cứu & Xem Hồ sơ", "➕ Admin: Cập nhật Hồ sơ (Tất cả)"]
+    else:
+        menu_options = ["🔍 Hồ sơ của tôi", "➕ Cập nhật Hồ sơ cá nhân"]
+
+    if st.session_state["menu_selection"] not in menu_options:
+        st.session_state["menu_selection"] = menu_options[0]
+
+    current_idx = menu_options.index(st.session_state["menu_selection"])
+    menu = st.radio("", menu_options, index=current_idx, label_visibility="collapsed")
+
     if menu != st.session_state["menu_selection"]:
         st.session_state["menu_selection"] = menu
         st.rerun()
 
+    st.markdown("---")
+    st.markdown("""
+    <div style='font-size:11px;color:rgba(212,175,55,0.4);text-align:center;line-height:1.8;padding-bottom:10px;'>
+        Ban Tuyên giáo & Dân vận<br>Tỉnh ủy Tuyên Quang<br>
+        <span style='font-size:10px;opacity:0.6;'>© Hệ thống quản lý CBCC v7.0</span>
+    </div>
+    """, unsafe_allow_html=True)
+
 # ==========================================
-# 7. HEADER CHÍNH & HÀM TIỆN ÍCH
+# 7. HEADER CHÍNH
 # ==========================================
 st.markdown(f"""
 <div class="gov-header">
@@ -282,82 +342,123 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
+# ==========================================
+# 8. HÀM TIỆN ÍCH
+# ==========================================
 @st.cache_data(ttl=5)
 def load_profiles():
-    try: return pd.DataFrame(supabase.table("ho_so_cbcc").select("*").execute().data)
-    except: return pd.DataFrame()
+    try:
+        return pd.DataFrame(supabase.table("ho_so_cbcc").select("*").execute().data)
+    except Exception:
+        return pd.DataFrame()
 
 df_hoso = load_profiles()
-def get_idx(lst, val): return lst.index(val) if val in lst else 0
-def section_title(icon, text): st.markdown(f'<div class="section-title">{icon} {text}</div>', unsafe_allow_html=True)
 
-# (Hàm tạo HTML bản in 2C-TW giữ nguyên)
+def get_idx(lst, val):
+    try: return lst.index(val)
+    except Exception: return 0
+
+def section_title(icon, text):
+    st.markdown(f'<div class="section-title">{icon} {text}</div>', unsafe_allow_html=True)
+
 def create_html_export(info, df_ct, df_l, df_kt, df_gd):
     def tbl(df, rename_map):
-        if df.empty: return "<tr><td colspan='10' style='text-align:center;color:#888;padding:16px;'>Chưa có dữ liệu.</td></tr>"
+        if df.empty:
+            return "<tr><td colspan='10' style='text-align:center;color:#888;padding:16px;'>Chưa có dữ liệu.</td></tr>"
         df2 = df.rename(columns=rename_map).drop(columns=['id', 'ma_cbcc'], errors='ignore')
         rows = "".join("<tr>" + "".join(f"<td>{v}</td>" for v in row) + "</tr>" for _, row in df2.iterrows())
-        return "<tr>" + "".join(f"<th>{c}</th>" for c in df2.columns) + "</tr>" + rows
-    
+        header = "<tr>" + "".join(f"<th>{c}</th>" for c in df2.columns) + "</tr>"
+        return header + rows
+
     ct_rows = tbl(df_ct, {'tu_ngay':'Từ ngày','den_ngay':'Đến ngày','vi_tri':'Vị trí','don_vi':'Đơn vị','quyet_dinh_so':'Quyết định số'})
-    l_rows = tbl(df_l, {'ngay_quyet_dinh':'Ngày QĐ','bac_luong':'Bậc lương','he_so':'Hệ số','quyet_dinh_so':'Quyết định số'})
+    l_rows  = tbl(df_l,  {'ngay_quyet_dinh':'Ngày QĐ','bac_luong':'Bậc lương','he_so':'Hệ số','quyet_dinh_so':'Quyết định số'})
     kt_rows = tbl(df_kt, {'ngay_quyet_dinh':'Ngày QĐ','loai':'Loại','noi_dung':'Nội dung','quyet_dinh_so':'Quyết định số'})
 
-    gd_html = "<tr><td colspan='7' style='text-align:center;color:#888;padding:16px;'>Chưa có dữ liệu.</td></tr>"
+    gd_html = ""
     if not df_gd.empty:
-        df_gd2 = df_gd.drop(columns=['id','ma_cbcc','created_at','thong_tin_khac'], errors='ignore').rename(columns={'loai_quan_he':'Phân loại','quan_he':'Quan hệ','ho_ten':'Họ tên','nam_sinh':'Năm sinh','que_quan_gd':'Quê quán','nghe_nghiep_gd':'Nghề nghiệp','noi_o_gd':'Nơi ở'})
-        rows = "".join("<tr>" + "".join(f"<td>{v}</td>" for v in row) + "</tr>" for _, row in df_gd2.iterrows())
-        gd_html = "<tr>" + "".join(f"<th>{c}</th>" for c in df_gd2.columns) + "</tr>" + rows
+        df_gd2 = df_gd.drop(columns=['id','ma_cbcc','created_at','thong_tin_khac'], errors='ignore').rename(columns={
+            'loai_quan_he':'Phân loại','quan_he':'Quan hệ','ho_ten':'Họ tên',
+            'nam_sinh':'Năm sinh','que_quan_gd':'Quê quán','nghe_nghiep_gd':'Nghề nghiệp','noi_o_gd':'Nơi ở'
+        })
+        header_gd = "<tr>" + "".join(f"<th>{c}</th>" for c in df_gd2.columns) + "</tr>"
+        gd_html = header_gd + "".join("<tr>" + "".join(f"<td>{v}</td>" for v in row) + "</tr>" for _, row in df_gd2.iterrows())
+    else:
+        gd_html = "<tr><td colspan='7' style='text-align:center;color:#888;padding:16px;'>Chưa có dữ liệu.</td></tr>"
 
-    html = f"""<!DOCTYPE html><html lang="vi"><head><meta charset="utf-8"><title>Sơ yếu lý lịch — {info.get('ho_ten','—')}</title>
-<style>body {{ font-family: 'Times New Roman', serif; line-height: 1.6; padding: 30px; font-size: 14px; }}
-table.data-table {{ width: 100%; border-collapse: collapse; margin-bottom: 20px; }}
-table.data-table th, table.data-table td {{ border: 1px solid #000; padding: 6px; }}
+    html = f"""<!DOCTYPE html>
+<html lang="vi"><head><meta charset="utf-8">
+<title>Sơ yếu lý lịch — {info['ho_ten']}</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&family=Source+Sans+3:wght@400;600&display=swap');
+  body{{font-family:'Source Sans 3','Times New Roman',serif;line-height:1.7;padding:48px 56px;max-width:860px;margin:auto;color:#1a1a2e;font-size:14px;}}
+  .header{{text-align:center;border-bottom:3px double #C8102E;padding-bottom:16px;margin-bottom:25px;}}
+  .header h1{{font-family:'Merriweather',serif;font-size:20px;text-transform:uppercase;letter-spacing:2px;color:#0A1628;margin-bottom:4px;}}
+  .header .org{{color:#C8102E;font-size:13px;font-weight:600;}}
+  .info-table{{width:100%;border-collapse:collapse;margin-bottom:20px;}}
+  .info-table td{{border:none;padding:6px 10px;border-bottom:1px dotted #ddd;width:50%;}}
+  h3{{font-family:'Merriweather',serif;color:#0A1628;background:linear-gradient(90deg,#f5e8e8,#fff);padding:6px 12px;border-left:5px solid #C8102E;margin:24px 0 12px;font-size:13px;text-transform:uppercase;letter-spacing:1px;}}
+  table.data-table{{width:100%;border-collapse:collapse;font-size:12px;}}
+  table.data-table th{{background:#0A1628;color:#fff;padding:8px 10px;text-align:left;}}
+  table.data-table td{{padding:7px 10px;border-bottom:1px solid #e8e0d4;vertical-align:top;}}
+  table.data-table tr:nth-child(even) td{{background:#fdf8f0;}}
+  .footer{{margin-top:40px;text-align:right;font-size:12px;color:#888;border-top:1px solid #ddd;padding-top:12px;}}
 </style></head><body>
-<h2 style="text-align:center;">SƠ YẾU LÝ LỊCH CÁN BỘ, CÔNG CHỨC</h2>
-<p><strong>Họ và tên:</strong> {info.get('ho_ten','—')} &nbsp;&nbsp; <strong>Mã CBCC:</strong> {info.get('id','—')}</p>
-<p><strong>Ngày sinh:</strong> {info.get('ngay_sinh','—')} &nbsp;&nbsp; <strong>Giới tính:</strong> {info.get('gioi_tinh','—')}</p>
-<p><strong>Quốc tịch:</strong> {info.get('quoc_tich','Việt Nam')} &nbsp;&nbsp; <strong>Dân tộc:</strong> {info.get('dan_toc','—')}</p>
-<p><strong>Chức vụ:</strong> {info.get('chuc_vu','—')} &nbsp;&nbsp; <strong>Đơn vị:</strong> {info.get('don_vi','—')}</p>
-<h3>1. Lịch sử công tác</h3><table class="data-table">{ct_rows}</table>
-<h3>2. Diễn biến lương</h3><table class="data-table">{l_rows}</table>
-<h3>3. Khen thưởng / Kỷ luật</h3><table class="data-table">{kt_rows}</table>
-<h3>4. Quan hệ gia đình</h3><table class="data-table">{gd_html}</table>
+<div class="header">
+  <p class="org">TỈNH ỦY TUYÊN QUANG — BAN TUYÊN GIÁO VÀ DÂN VẬN</p>
+  <h1>Sơ yếu lý lịch cán bộ, công chức</h1>
+</div>
+<h3>I. Thông tin cá nhân</h3>
+<table class="info-table">
+  <tr><td><strong>Họ và tên:</strong> {str(info.get('ho_ten','')).upper()}</td><td><strong>Mã CBCC:</strong> {info.get('id','—')}</td></tr>
+  <tr><td><strong>Ngày sinh:</strong> {info.get('ngay_sinh','—')}</td><td><strong>Giới tính:</strong> {info.get('gioi_tinh','—')}</td></tr>
+  <tr><td><strong>Quốc tịch:</strong> {info.get('quoc_tich','Việt Nam')}</td><td><strong>Dân tộc:</strong> {info.get('dan_toc','—')}</td></tr>
+  <tr><td><strong>Nơi đăng ký khai sinh:</strong> {info.get('noi_khai_sinh','—')}</td><td><strong>Nơi đăng ký thường trú:</strong> {info.get('thuong_tru','—')}</td></tr>
+  <tr><td colspan="2"><strong>Nơi ở hiện nay:</strong> {info.get('noi_o_hien_nay','—')}</td></tr>
+  <tr><td><strong>Quê quán:</strong> {info.get('que_quan','—')}</td><td><strong>Đơn vị công tác:</strong> {info.get('don_vi','—')}</td></tr>
+  <tr><td><strong>Chức vụ hiện tại:</strong> {info.get('chuc_vu','—')}</td><td><strong>Chức vụ trong Đảng:</strong> {info.get('chuc_vu_dang','—')}</td></tr>
+  <tr><td><strong>Nghề nghiệp hiện nay:</strong> {info.get('nghe_nghiep_ht','—')}</td><td><strong>Ngạch công chức:</strong> {info.get('ngach_cong_chuc','—')}</td></tr>
+  <tr><td><strong>Giáo dục phổ thông:</strong> {info.get('giao_duc_pt','—')}</td><td><strong>Trình độ chuyên môn:</strong> {info.get('trinh_do_chuyen_mon','—')}</td></tr>
+  <tr><td><strong>Học vị:</strong> {info.get('hoc_vi','—')}</td><td><strong>Lý luận chính trị:</strong> {info.get('ly_luan_chinh_tri','—')}</td></tr>
+  <tr><td><strong>Ngoại ngữ:</strong> {info.get('ngoai_ngu','—')}</td><td><strong>Tin học:</strong> {info.get('tin_hoc','—')}</td></tr>
+  <tr><td colspan="2"><strong>Đảng vụ:</strong> Kết nạp: {info.get('ngay_vao_dang','—')} &nbsp;|&nbsp; Chính thức: {info.get('ngay_chinh_thuc','—')}</td></tr>
+</table>
+<h3>II. Lịch sử công tác</h3>
+<table class="data-table">{ct_rows}</table>
+<h3>III. Diễn biến lương</h3>
+<table class="data-table">{l_rows}</table>
+<h3>IV. Khen thưởng & kỷ luật</h3>
+<table class="data-table">{kt_rows}</table>
+<h3>V. Quan hệ gia đình</h3>
+<table class="data-table">{gd_html}</table>
+<div class="footer">Xuất từ Hệ thống Quản lý Hồ sơ CBCC — Ban Tuyên giáo và Dân vận Tỉnh ủy Tuyên Quang</div>
 </body></html>"""
     return html.encode('utf-8')
 
+
 # ==========================================
-# MODULE 1: DASHBOARD (HOÀN HẢO)
+# MODULE 1: DASHBOARD (ĐÃ TỐI ƯU HÓA)
 # ==========================================
 if menu == "📊 Dashboard":
-    # 🤖 CHỖ NÀY ĐỂ DÀNH CHO CODE CHATBOT TRỢ LÝ NHÂN SỰ CỦA SẾP
-    # Sếp dán code chatbot vào dưới dòng này nếu cần nhé!
-    # st.subheader("🤖 Trợ lý Nhân sự")
-    # ... code chatbot ...
-
     section_title("📊", "THỐNG KÊ NHÂN SỰ TỔNG QUAN")
 
     if df_hoso.empty:
         st.info("📭 Chưa có dữ liệu để thống kê. Vui lòng nhập hồ sơ cán bộ trước.")
     else:
-        # BƯỚC QUAN TRỌNG: Làm sạch dữ liệu, xử lý các ô chỉ toàn dấu cách
         df = df_hoso.fillna("Chưa xác định").copy()
-        df = df.replace(r'^\s*$', 'Chưa xác định', regex=True)
-
-        total  = len(df)
-        nam    = len(df[df["gioi_tinh"] == "Nam"])
-        nu     = len(df[df["gioi_tinh"] == "Nữ"])
-        dang   = len(df[df["ngay_vao_dang"].notna() & (df["ngay_vao_dang"] != "Chưa xác định")])
-        thac_si= len(df[df["trinh_do_chuyen_mon"].str.contains("Thạc|Tiến", case=False, na=False)])
+        total   = len(df)
+        nam     = len(df[df["gioi_tinh"] == "Nam"])
+        nu      = len(df[df["gioi_tinh"] == "Nữ"])
+        dang    = len(df[df["ngay_vao_dang"].notna() & (df["ngay_vao_dang"] != "Chưa xác định") & (df["ngay_vao_dang"] != "")])
+        thac_si = len(df[df["trinh_do_chuyen_mon"].str.contains("Thạc|Tiến", case=False, na=False)])
         tyle_nu = round(nu / total * 100) if total else 0
 
-        # ---- METRIC CARDS ----
+        # ── METRIC CARDS ──
         st.markdown(f"""
         <div class="metric-grid">
             <div class="metric-card">
                 <div class="m-label">👥 Tổng Cán bộ</div>
                 <div class="m-value">{total}</div>
-                <div class="m-sub">Biên chế chính thức toàn Ban</div>
+                <div class="m-sub">Biên chế chính thức</div>
             </div>
             <div class="metric-card gold">
                 <div class="m-label">👨 Cán bộ Nam</div>
@@ -377,16 +478,35 @@ if menu == "📊 Dashboard":
         </div>
         """, unsafe_allow_html=True)
 
-        # ---- BIỂU ĐỒ HÀNG 1 ----
+        # ── HÀNG 2: GIỚI TÍNH + TRÌNH ĐỘ CHUYÊN MÔN ──
         col_a, col_b = st.columns([1, 2])
+
         with col_a:
             df_gt = df[df['gioi_tinh'].isin(["Nam", "Nữ"])]['gioi_tinh'].value_counts().reset_index()
             df_gt.columns = ['Giới tính', 'Số lượng']
             if not df_gt.empty:
-                fig_gt = px.pie(df_gt, values='Số lượng', names='Giới tính', hole=0.60, color='Giới tính', color_discrete_map={'Nam': '#1A2E4A', 'Nữ': '#C8102E'}, title='<b>Cơ cấu Giới tính</b>')
-                fig_gt.update_traces(textposition='outside', textinfo='label+percent+value', marker=dict(line=dict(color='#ffffff', width=3)), pull=[0.04, 0.04])
-                fig_gt.add_annotation(text=f"<b>{total}</b><br>CB", x=0.5, y=0.5, showarrow=False, font=dict(size=20, color='#1A2E4A', family='Merriweather'))
-                fig_gt.update_layout(font_family="Source Sans 3", title_font=dict(size=14, color='#1A2E4A'), title_x=0.5, plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)', showlegend=True, legend=dict(orientation="h", yanchor="bottom", y=-0.15, xanchor="center", x=0.5), margin=dict(t=50, b=30, l=20, r=20), height=320)
+                fig_gt = px.pie(df_gt, values='Số lượng', names='Giới tính', hole=0.60,
+                                color='Giới tính',
+                                color_discrete_map={'Nam': '#1A2E4A', 'Nữ': '#C8102E'},
+                                title='<b>Cơ cấu Giới tính</b>')
+                fig_gt.update_traces(
+                    textposition='outside', textinfo='label+percent+value',
+                    textfont_size=13,
+                    marker=dict(line=dict(color='#ffffff', width=3)),
+                    pull=[0.04, 0.04]
+                )
+                fig_gt.add_annotation(
+                    text=f"<b>{total}</b><br>CB", x=0.5, y=0.5, showarrow=False,
+                    font=dict(size=20, color='#1A2E4A', family='Merriweather')
+                )
+                fig_gt.update_layout(
+                    font_family="Source Sans 3",
+                    title_font=dict(size=14, color='#1A2E4A'), title_x=0.5,
+                    plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)',
+                    showlegend=True,
+                    legend=dict(orientation="h", yanchor="bottom", y=-0.15, xanchor="center", x=0.5, font=dict(size=12)),
+                    margin=dict(t=50, b=30, l=20, r=20), height=320
+                )
                 st.plotly_chart(fig_gt, use_container_width=True)
 
         with col_b:
@@ -394,19 +514,55 @@ if menu == "📊 Dashboard":
             df_cm.columns = ['Trình độ', 'Số lượng']
             df_cm = df_cm.sort_values('Số lượng', ascending=False)
             if not df_cm.empty:
-                fig_cm = px.bar(df_cm, x='Trình độ', y='Số lượng', text_auto=True, title='<b>Trình độ Chuyên môn</b>', color_discrete_sequence=['#C8102E'])
-                fig_cm.update_layout(font_family="Source Sans 3", title_font_size=14, title_x=0.5, plot_bgcolor='rgba(248,244,239,0.6)', paper_bgcolor='rgba(0,0,0,0)', margin=dict(t=55, b=20, l=40, r=20), height=320)
+                n = len(df_cm)
+                colors_cm = [f'rgba({int(168 + (232-168)*i/max(n-1,1))},{int(12 + (32-12)*i/max(n-1,1))},{int(35 + (63-35)*i/max(n-1,1))},0.85)' for i in range(n)]
+                fig_cm = go.Figure(go.Bar(
+                    x=df_cm['Trình độ'], y=df_cm['Số lượng'],
+                    marker_color=colors_cm,
+                    marker_line=dict(color='#ffffff', width=1.5),
+                    text=df_cm['Số lượng'], textposition='outside',
+                    textfont=dict(size=14, color='#1A2E4A', family='Merriweather'),
+                    hovertemplate='<b>%{x}</b><br>%{y} người<extra></extra>'
+                ))
+                fig_cm.update_layout(
+                    title=dict(text='<b>Trình độ Chuyên môn</b>', x=0.5, font=dict(size=14, color='#1A2E4A')),
+                    font_family="Source Sans 3",
+                    plot_bgcolor='rgba(248,244,239,0.6)', paper_bgcolor='rgba(0,0,0,0)',
+                    xaxis=dict(title=None, tickfont=dict(size=11, color='#3D3D5C'), gridcolor='rgba(0,0,0,0)', linecolor='#D4AF37', linewidth=1.5),
+                    yaxis=dict(title='Số người', tickfont=dict(size=11), gridcolor='rgba(212,175,55,0.15)', zeroline=False),
+                    margin=dict(t=55, b=20, l=40, r=20), height=320, bargap=0.35
+                )
                 st.plotly_chart(fig_cm, use_container_width=True)
 
-        # ---- BIỂU ĐỒ HÀNG 2 (NGẠCH & LÝ LUẬN - CỘT NGANG) ----
+        # ── HÀNG 3: NGẠCH CÔNG CHỨC + LÝ LUẬN CHÍNH TRỊ ──
         col_c, col_d = st.columns(2)
+
         with col_c:
             df_ng = df[df['ngach_cong_chuc'] != 'Chưa xác định']['ngach_cong_chuc'].value_counts().reset_index()
             df_ng.columns = ['Ngạch', 'Số lượng']
+            df_ng = df_ng.sort_values('Số lượng', ascending=True)
             if not df_ng.empty:
-                fig_ng = px.bar(df_ng, y='Ngạch', x='Số lượng', orientation='h', title='<b>Ngạch Công chức hiện hưởng</b>', color_discrete_sequence=['#1A2E4A'], text_auto=True)
-                fig_ng.update_layout(font_family="Source Sans 3", title_font_size=14, title_x=0.5, plot_bgcolor='rgba(248,244,239,0.6)', paper_bgcolor='rgba(0,0,0,0)', yaxis={'categoryorder': 'total ascending'}, margin=dict(t=55, b=20, l=10, r=50), height=340)
+                n2 = len(df_ng)
+                colors_ng = [f'rgba({int(10 + (42-10)*i/max(n2-1,1))},{int(22 + (74-22)*i/max(n2-1,1))},{int(40 + (112-40)*i/max(n2-1,1))},0.85)' for i in range(n2)]
+                fig_ng = go.Figure(go.Bar(
+                    y=df_ng['Ngạch'], x=df_ng['Số lượng'], orientation='h',
+                    marker_color=colors_ng,
+                    marker_line=dict(color='#D4AF37', width=0.8),
+                    text=df_ng['Số lượng'], textposition='outside',
+                    textfont=dict(size=13, color='#1A2E4A', family='Merriweather'),
+                    hovertemplate='<b>%{y}</b><br>%{x} người<extra></extra>'
+                ))
+                fig_ng.update_layout(
+                    title=dict(text='<b>Ngạch Công chức hiện hưởng</b>', x=0.5, font=dict(size=14, color='#1A2E4A')),
+                    font_family="Source Sans 3",
+                    plot_bgcolor='rgba(248,244,239,0.6)', paper_bgcolor='rgba(0,0,0,0)',
+                    xaxis=dict(title='Số người', tickfont=dict(size=11), gridcolor='rgba(212,175,55,0.15)', zeroline=False),
+                    yaxis=dict(title=None, tickfont=dict(size=11, color='#1A2E4A'), gridcolor='rgba(0,0,0,0)', linecolor='#D4AF37', linewidth=1.5, automargin=True),
+                    margin=dict(t=55, b=20, l=10, r=50), height=340, bargap=0.3
+                )
                 st.plotly_chart(fig_ng, use_container_width=True)
+            else:
+                st.info("Chưa có dữ liệu ngạch công chức.")
 
         with col_d:
             thu_tu_ll = ["Chưa qua đào tạo", "Sơ cấp", "Trung cấp", "Cao cấp", "Cử nhân"]
@@ -415,52 +571,132 @@ if menu == "📊 Dashboard":
             df_ll_raw['Lý luận CT'] = pd.Categorical(df_ll_raw['Lý luận CT'], categories=thu_tu_ll, ordered=True)
             df_ll = df_ll_raw.sort_values('Lý luận CT', ascending=True).dropna()
             if not df_ll.empty:
-                fig_ll = px.bar(df_ll, y='Lý luận CT', x='Số lượng', orientation='h', title='<b>Trình độ Lý luận Chính trị</b>', color_discrete_sequence=['#D4AF37'], text_auto=True)
-                fig_ll.update_layout(font_family="Source Sans 3", title_font_size=14, title_x=0.5, plot_bgcolor='rgba(248,244,239,0.6)', paper_bgcolor='rgba(0,0,0,0)', margin=dict(t=55, b=20, l=10, r=50), height=340)
+                color_map_ll = {
+                    "Chưa qua đào tạo": "rgba(180,180,180,0.7)",
+                    "Sơ cấp":           "rgba(212,175,55,0.55)",
+                    "Trung cấp":        "rgba(212,175,55,0.72)",
+                    "Cao cấp":          "rgba(212,175,55,0.90)",
+                    "Cử nhân":          "rgba(184,134,11,0.95)"
+                }
+                bar_colors_ll = [color_map_ll.get(str(x), "rgba(212,175,55,0.7)") for x in df_ll['Lý luận CT']]
+                fig_ll = go.Figure(go.Bar(
+                    y=df_ll['Lý luận CT'].astype(str), x=df_ll['Số lượng'], orientation='h',
+                    marker_color=bar_colors_ll,
+                    marker_line=dict(color='#8B6914', width=0.8),
+                    text=df_ll['Số lượng'], textposition='outside',
+                    textfont=dict(size=13, color='#1A2E4A', family='Merriweather'),
+                    hovertemplate='<b>%{y}</b><br>%{x} người<extra></extra>'
+                ))
+                fig_ll.update_layout(
+                    title=dict(text='<b>Trình độ Lý luận Chính trị</b>', x=0.5, font=dict(size=14, color='#1A2E4A')),
+                    font_family="Source Sans 3",
+                    plot_bgcolor='rgba(248,244,239,0.6)', paper_bgcolor='rgba(0,0,0,0)',
+                    xaxis=dict(title='Số người', tickfont=dict(size=11), gridcolor='rgba(212,175,55,0.15)', zeroline=False),
+                    yaxis=dict(title=None, tickfont=dict(size=11, color='#1A2E4A'), gridcolor='rgba(0,0,0,0)', linecolor='#D4AF37', linewidth=1.5),
+                    margin=dict(t=55, b=20, l=10, r=50), height=340, bargap=0.3
+                )
                 st.plotly_chart(fig_ll, use_container_width=True)
+            else:
+                st.info("Chưa có dữ liệu lý luận chính trị.")
 
-        # ---- BẢNG TÓM TẮT & HỌC VỊ ----
-        section_title("🎓", "CƠ CẤU HỌC VỊ VÀ ĐẢNG VỤ")
+        # ── HÀNG 4: HỌC VỊ + BẢNG TỔNG HỢP ──
+        section_title("🎓", "CƠ CẤU HỌC VỊ VÀ BẢNG TỔNG HỢP")
         col_e, col_f = st.columns([1.4, 1])
+
         with col_e:
-            df_hv = df[(df['hoc_vi'] != 'Chưa xác định')]['hoc_vi'].value_counts().reset_index()
+            df_hv = df[
+                (df['hoc_vi'] != 'Chưa xác định') & (df['hoc_vi'].str.strip() != '') & (df['hoc_vi'] != '—')
+            ]['hoc_vi'].value_counts().reset_index()
             df_hv.columns = ['Học vị', 'Số lượng']
             chua_hoc_vi = total - df_hv['Số lượng'].sum()
             if chua_hoc_vi > 0:
-                df_hv = pd.concat([df_hv, pd.DataFrame([{'Học vị': 'Đại học / Chưa xác định', 'Số lượng': chua_hoc_vi}])], ignore_index=True)
-            
-            fig_hv = px.pie(df_hv, values='Số lượng', names='Học vị', hole=0.55, title='<b>Cơ cấu Học vị cán bộ</b>', color_discrete_sequence=px.colors.sequential.RdBu)
-            fig_hv.update_traces(textposition='outside', textinfo='label+percent')
-            fig_hv.update_layout(font_family="Source Sans 3", title_font_size=14, title_x=0.5, margin=dict(t=55, b=20, l=20, r=160), height=360)
+                df_hv = pd.concat([df_hv, pd.DataFrame([{'Học vị': 'Đại học / Chưa có học vị', 'Số lượng': chua_hoc_vi}])], ignore_index=True)
+
+            palette_hv = ['#0A1628', '#C8102E', '#D4AF37', '#1A2E4A', '#2A4A70', '#A00C23', '#B8860B', '#6B7280']
+            fig_hv = go.Figure(go.Pie(
+                labels=df_hv['Học vị'], values=df_hv['Số lượng'], hole=0.55,
+                marker=dict(colors=palette_hv[:len(df_hv)], line=dict(color='#ffffff', width=3)),
+                textinfo='label+percent', textposition='outside',
+                textfont=dict(size=12, color='#1A2E4A'),
+                pull=[0.04] * len(df_hv),
+                hovertemplate='<b>%{label}</b><br>%{value} người (%{percent})<extra></extra>'
+            ))
+            fig_hv.add_annotation(
+                text="<b>Học vị</b>", x=0.5, y=0.5, showarrow=False,
+                font=dict(size=13, color='#1A2E4A', family='Source Sans 3')
+            )
+            fig_hv.update_layout(
+                title=dict(text='<b>Cơ cấu Học vị cán bộ</b>', x=0.5, font=dict(size=14, color='#1A2E4A')),
+                font_family="Source Sans 3",
+                plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)',
+                showlegend=True,
+                legend=dict(orientation="v", yanchor="middle", y=0.5, xanchor="left", x=1.02,
+                            font=dict(size=11, color='#1A2E4A'),
+                            bgcolor='rgba(253,248,240,0.8)', bordercolor='#D4AF37', borderwidth=1),
+                margin=dict(t=55, b=20, l=20, r=160), height=360
+            )
             st.plotly_chart(fig_hv, use_container_width=True)
 
         with col_f:
             tyle_dang = round(dang / total * 100) if total else 0
+            cao_cap_cn = len(df[df['ly_luan_chinh_tri'].isin(['Cao cấp', 'Cử nhân'])])
             st.markdown(f"""
-            <div style="background:#fff;border-radius:12px;padding:22px 24px;border-left:5px solid #D4AF37;box-shadow:0 4px 20px rgba(0,0,0,0.08);margin-top:8px;">
-                <div style="font-family:'Merriweather',serif;font-size:13px;font-weight:700;color:#0A1628;letter-spacing:1px;text-transform:uppercase;border-bottom:1px dashed rgba(212,175,55,0.4);padding-bottom:10px;margin-bottom:14px;">📋 Bảng Tổng hợp Chỉ tiêu</div>
+            <div style="background:#fff;border-radius:12px;padding:22px 24px;
+                border-left:5px solid #D4AF37;box-shadow:0 4px 20px rgba(0,0,0,0.08);margin-top:8px;">
+                <div style="font-family:'Merriweather',serif;font-size:13px;font-weight:700;
+                    color:#0A1628;letter-spacing:1px;text-transform:uppercase;
+                    border-bottom:1px dashed rgba(212,175,55,0.4);padding-bottom:10px;margin-bottom:14px;">
+                    📋 Bảng Tổng hợp Chỉ tiêu
+                </div>
                 <table style="width:100%;border-collapse:collapse;font-size:13px;">
-                    <tr style="background:rgba(200,16,46,0.06);"><td style="padding:9px 10px;color:#6B7280;font-weight:600;">👥 Tổng biên chế</td><td style="padding:9px 10px;text-align:right;font-weight:900;color:#C8102E;font-size:16px;">{total}</td></tr>
-                    <tr><td style="padding:9px 10px;color:#6B7280;font-weight:600;">👨 Cán bộ Nam</td><td style="padding:9px 10px;text-align:right;font-weight:700;color:#1A2E4A;">{nam} ({round(nam/total*100) if total else 0}%)</td></tr>
-                    <tr style="background:rgba(212,175,55,0.05);"><td style="padding:9px 10px;color:#6B7280;font-weight:600;">👩 Cán bộ Nữ</td><td style="padding:9px 10px;text-align:right;font-weight:700;color:#C8102E;">{nu} ({tyle_nu}%)</td></tr>
-                    <tr><td style="padding:9px 10px;color:#6B7280;font-weight:600;">☭ Đảng viên</td><td style="padding:9px 10px;text-align:right;font-weight:700;color:#1A2E4A;">{dang} ({tyle_dang}%)</td></tr>
-                    <tr style="background:rgba(200,16,46,0.06);"><td style="padding:9px 10px;color:#6B7280;font-weight:600;">🎓 Thạc sĩ trở lên</td><td style="padding:9px 10px;text-align:right;font-weight:700;color:#2E7D32;">{thac_si} ({round(thac_si/total*100) if total else 0}%)</td></tr>
-                    <tr><td style="padding:9px 10px;color:#6B7280;font-weight:600;">🏛️ Lý luận Cao cấp/CN</td><td style="padding:9px 10px;text-align:right;font-weight:700;color:#B8860B;">{len(df[df['ly_luan_chinh_tri'].isin(['Cao cấp','Cử nhân'])])} người</td></tr>
+                    <tr style="background:rgba(200,16,46,0.05);">
+                        <td style="padding:9px 10px;color:#6B7280;font-weight:600;">👥 Tổng biên chế</td>
+                        <td style="padding:9px 10px;text-align:right;font-weight:900;color:#C8102E;font-family:'Merriweather',serif;font-size:18px;">{total}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding:9px 10px;color:#6B7280;font-weight:600;">👨 Cán bộ Nam</td>
+                        <td style="padding:9px 10px;text-align:right;font-weight:700;color:#1A2E4A;">{nam} &nbsp;<span style="font-size:11px;color:#9CA3AF;">({round(nam/total*100) if total else 0}%)</span></td>
+                    </tr>
+                    <tr style="background:rgba(212,175,55,0.05);">
+                        <td style="padding:9px 10px;color:#6B7280;font-weight:600;">👩 Cán bộ Nữ</td>
+                        <td style="padding:9px 10px;text-align:right;font-weight:700;color:#C8102E;">{nu} &nbsp;<span style="font-size:11px;color:#9CA3AF;">({tyle_nu}%)</span></td>
+                    </tr>
+                    <tr>
+                        <td style="padding:9px 10px;color:#6B7280;font-weight:600;">☭ Đảng viên</td>
+                        <td style="padding:9px 10px;text-align:right;font-weight:700;color:#1A2E4A;">{dang} &nbsp;<span style="font-size:11px;color:#9CA3AF;">({tyle_dang}%)</span></td>
+                    </tr>
+                    <tr style="background:rgba(200,16,46,0.05);">
+                        <td style="padding:9px 10px;color:#6B7280;font-weight:600;">🎓 Thạc sĩ trở lên</td>
+                        <td style="padding:9px 10px;text-align:right;font-weight:700;color:#2E7D32;">{thac_si} &nbsp;<span style="font-size:11px;color:#9CA3AF;">({round(thac_si/total*100) if total else 0}%)</span></td>
+                    </tr>
+                    <tr style="background:rgba(212,175,55,0.05);">
+                        <td style="padding:9px 10px;color:#6B7280;font-weight:600;">🏛️ LLCT Cao cấp / CN</td>
+                        <td style="padding:9px 10px;text-align:right;font-weight:700;color:#B8860B;">{cao_cap_cn} người</td>
+                    </tr>
+                    <tr>
+                        <td style="padding:9px 10px;color:#6B7280;font-weight:600;">📅 Cập nhật</td>
+                        <td style="padding:9px 10px;text-align:right;font-weight:500;color:#9CA3AF;font-size:11px;">{datetime.now().strftime('%d/%m/%Y %H:%M')}</td>
+                    </tr>
                 </table>
             </div>
             """, unsafe_allow_html=True)
 
-        # ---- DANH SÁCH & XUẤT FILE ----
+        # ── DANH SÁCH ──
         section_title("📋", "DANH SÁCH CÁN BỘ, CÔNG CHỨC")
-        cols_show = ['id', 'ho_ten', 'chuc_vu', 'don_vi', 'ngay_sinh', 'gioi_tinh', 'hoc_vi', 'trinh_do_chuyen_mon', 'ly_luan_chinh_tri', 'ngach_cong_chuc']
+        cols_show = ['id','ho_ten','chuc_vu','don_vi','ngay_sinh','gioi_tinh','hoc_vi','trinh_do_chuyen_mon','ly_luan_chinh_tri','ngach_cong_chuc']
         df_show = df[[c for c in cols_show if c in df.columns]].rename(columns={
-            'id': 'Mã CB', 'ho_ten': 'Họ và tên', 'chuc_vu': 'Chức vụ', 'don_vi': 'Đơn vị',
-            'ngay_sinh': 'Ngày sinh', 'gioi_tinh': 'Giới tính', 'hoc_vi': 'Học vị', 
-            'trinh_do_chuyen_mon': 'Chuyên môn', 'ly_luan_chinh_tri': 'Lý luận CT', 'ngach_cong_chuc': 'Ngạch CC'
+            'id':'Mã CB','ho_ten':'Họ và tên','chuc_vu':'Chức vụ','don_vi':'Đơn vị',
+            'ngay_sinh':'Ngày sinh','gioi_tinh':'Giới tính','hoc_vi':'Học vị',
+            'trinh_do_chuyen_mon':'Chuyên môn','ly_luan_chinh_tri':'Lý luận CT','ngach_cong_chuc':'Ngạch CC'
         })
         st.dataframe(df_show, hide_index=True, use_container_width=True)
-
-        st.download_button("📥  XUẤT DANH SÁCH (.CSV)", data=df_show.to_csv(index=False, encoding='utf-8-sig').encode('utf-8-sig'), file_name=f"DanhSach_CBCC_{datetime.now().strftime('%Y%m%d')}.csv", mime="text/csv")
+        csv_data = df_show.to_csv(index=False, encoding='utf-8-sig').encode('utf-8-sig')
+        st.download_button(
+            label="📥  XUẤT DANH SÁCH (.CSV)",
+            data=csv_data,
+            file_name=f"DanhSach_CBCC_{datetime.now().strftime('%Y%m%d')}.csv",
+            mime="text/csv"
+        )
 
 # ==========================================
 # MODULE 2: ADMIN DUYỆT TÀI KHOẢN
@@ -468,210 +704,316 @@ if menu == "📊 Dashboard":
 elif menu == "🛡️ Admin: Duyệt Tài khoản":
     section_title("🛡️", "QUẢN TRỊ TÀI KHOẢN HỆ THỐNG")
     tk_data = supabase.table("tai_khoan").select("*").execute().data
-    if not tk_data: st.info("Chưa có tài khoản nào.")
+    if not tk_data:
+        st.info("Chưa có tài khoản nào trong hệ thống.")
     else:
         df_tk = pd.DataFrame(tk_data)
         tab_cd, tab_hd = st.tabs(["⏳  Chờ phê duyệt", "✅  Tài khoản hoạt động"])
         with tab_cd:
             df_choduyet = df_tk[df_tk['trang_thai'] == 'Chờ duyệt']
-            if df_choduyet.empty: st.success("🎉 Không có yêu cầu nào chờ duyệt.")
+            if df_choduyet.empty:
+                st.success("🎉 Không có yêu cầu nào đang chờ phê duyệt.")
             else:
-                for _, row in df_choduyet.iterrows():
-                    with st.expander(f"👤  {row['ho_ten']} ({row['ma_cbcc']}) — {row['chuc_vu']}"):
-                        st.markdown(f"<b>Đơn vị:</b> {row['don_vi']}<br><b>Chức vụ:</b> {row['chuc_vu']}", unsafe_allow_html=True)
-                        c1, c2 = st.columns(2)
-                        if c1.button("✅ DUYỆT", key=f"d_{row['ma_cbcc']}", use_container_width=True):
+                for idx, row in df_choduyet.iterrows():
+                    with st.expander(f"👤  {row['ho_ten']}  ({row['ma_cbcc']})  —  {row['chuc_vu']}"):
+                        st.markdown(f"<div style='background:#f8f4ef;border-radius:8px;padding:14px;margin-bottom:12px;'><b>Đơn vị:</b> {row['don_vi']}<br><b>Chức vụ:</b> {row['chuc_vu']}</div>", unsafe_allow_html=True)
+                        c_duyet, c_xoa = st.columns(2)
+                        if c_duyet.button("✅  PHÊ DUYỆT", key=f"duyet_{row['ma_cbcc']}", use_container_width=True):
                             supabase.table("tai_khoan").update({"trang_thai": "Hoạt động"}).eq("ma_cbcc", row['ma_cbcc']).execute()
-                            if not supabase.table("ho_so_cbcc").select("id").eq("id", row['ma_cbcc']).execute().data:
-                                supabase.table("ho_so_cbcc").insert({"id": row['ma_cbcc'], "ho_ten": row['ho_ten'], "chuc_vu": row['chuc_vu'], "don_vi": row['don_vi'], "quoc_tich": "Việt Nam", "dan_toc": "Kinh"}).execute()
-                            st.success("Đã duyệt!"); st.rerun()
-                        if c2.button("❌ TỪ CHỐI", key=f"x_{row['ma_cbcc']}", use_container_width=True):
+                            try:
+                                if len(supabase.table("ho_so_cbcc").select("id").eq("id", row['ma_cbcc']).execute().data) == 0:
+                                    supabase.table("ho_so_cbcc").insert({"id": row['ma_cbcc'], "ho_ten": row['ho_ten'], "chuc_vu": row['chuc_vu'], "don_vi": row['don_vi'], "quoc_tich": "Việt Nam", "dan_toc": "Kinh"}).execute()
+                            except Exception: pass
+                            st.success("✅ Đã phê duyệt."); st.rerun()
+                        if c_xoa.button("❌  TỪ CHỐI", key=f"xoa_cd_{row['ma_cbcc']}", use_container_width=True):
                             supabase.table("tai_khoan").delete().eq("ma_cbcc", row['ma_cbcc']).execute()
-                            st.success("Đã xóa."); st.rerun()
-
+                            st.success("Đã từ chối."); st.rerun()
         with tab_hd:
             df_hd = df_tk[df_tk['trang_thai'] == 'Hoạt động']
-            st.dataframe(df_hd[['ma_cbcc', 'ho_ten', 'chuc_vu', 'don_vi', 'phan_quyen']], hide_index=True, use_container_width=True)
+            st.dataframe(df_hd[['ma_cbcc','ho_ten','chuc_vu','don_vi','phan_quyen']].rename(columns={'ma_cbcc':'Mã','ho_ten':'Họ tên','chuc_vu':'Chức vụ','don_vi':'Đơn vị','phan_quyen':'Quyền'}), hide_index=True, use_container_width=True)
             st.markdown("---")
-            c_rs, c_del = st.columns(2)
             ds_hd = (df_hd['ma_cbcc'] + " — " + df_hd['ho_ten']).tolist()
+            c_rs, c_del = st.columns(2)
             with c_rs:
-                rs_ma = st.selectbox("🔑 Xem Mật khẩu:", ds_hd)
-                if st.button("👁️ XEM MẬT KHẨU", use_container_width=True):
+                section_title("🔑", "Tra cứu Mật khẩu")
+                rs_ma = st.selectbox("Chọn tài khoản:", ds_hd, key="rs_sel")
+                if st.button("👁️  XEM MẬT KHẨU", use_container_width=True):
                     ma_xem = rs_ma.split(" — ")[0]
-                    mk = supabase.table("tai_khoan").select("mat_khau").eq("ma_cbcc", ma_xem).execute().data
-                    if mk: st.info(f"Mật khẩu: `{mk[0]['mat_khau']}`")
+                    mk_data = supabase.table("tai_khoan").select("mat_khau").eq("ma_cbcc", ma_xem).execute().data
+                    if mk_data: st.info(f"🔐 Mật khẩu **{rs_ma.split(' — ')[1]}** ({ma_xem}): `{mk_data[0]['mat_khau']}`")
             with c_del:
-                del_ma = st.selectbox("❌ Xóa Tài khoản:", ["— Chọn —"] + ds_hd)
-                if st.button("🗑️ XÓA VĨNH VIỄN", use_container_width=True) and del_ma != "— Chọn —":
+                section_title("❌", "Xóa Tài khoản")
+                del_ma = st.selectbox("Chọn:", ["— Chọn —"] + ds_hd, key="del_sel")
+                if st.button("🗑️  XÁC NHẬN XÓA", use_container_width=True) and del_ma != "— Chọn —":
                     ma_xoa = del_ma.split(" — ")[0]
-                    if ma_xoa.upper() == "ADMIN": st.error("⚠️ Không thể xóa Admin!")
+                    if ma_xoa.upper() == "ADMIN": st.error("⚠️ Không thể xóa Admin gốc!")
                     else:
                         supabase.table("tai_khoan").delete().eq("ma_cbcc", ma_xoa).execute()
                         supabase.table("ho_so_cbcc").delete().eq("id", ma_xoa).execute()
-                        st.success("Đã xóa hoàn toàn."); st.rerun()
+                        st.success(f"✅ Đã xóa {ma_xoa}."); st.rerun()
 
 # ==========================================
 # MODULE 3: XEM HỒ SƠ
 # ==========================================
 elif menu in ["🔍 Tra cứu & Xem Hồ sơ", "🔍 Hồ sơ của tôi"]:
     section_title("🔍", "TRA CỨU & XEM HỒ SƠ CÁN BỘ")
-    if df_hoso.empty: st.warning("📭 Hệ thống chưa có hồ sơ.")
+    if df_hoso.empty:
+        st.warning("📭 Cơ sở dữ liệu trống.")
     else:
         ma_chon = ""
         if is_admin:
-            tu_khoa = st.text_input("🔎 Tìm kiếm (Tên/Mã):", placeholder="Nhập từ khóa...")
-            if tu_khoa:
-                df_kq = df_hoso[df_hoso.apply(lambda r: r.astype(str).str.contains(tu_khoa, case=False).any(), axis=1)]
-                if not df_kq.empty:
-                    chon = st.selectbox("👉 Chọn cán bộ:", (df_kq['ho_ten'] + " (" + df_kq['id'] + ")").tolist())
-                    ma_chon = chon.split("(")[-1].replace(")", "")
-                else: st.warning("Không tìm thấy.")
+            tu_khoa = st.text_input("🔎  Tìm kiếm theo Tên hoặc Mã CBCC:", placeholder="Nhập từ khóa…")
+            if not tu_khoa.strip():
+                st.info("👆 Nhập từ khóa để tìm kiếm.")
+            else:
+                df_kq = df_hoso[df_hoso.apply(lambda r: r.astype(str).str.contains(tu_khoa.strip(), case=False).any(), axis=1)]
+                if df_kq.empty:
+                    st.warning(f"❌ Không tìm thấy khớp với **'{tu_khoa}'**.")
+                else:
+                    ds_hien = (df_kq['ho_ten'] + " — " + df_kq['chuc_vu'] + " (" + df_kq['id'] + ")").tolist()
+                    chon = st.selectbox("👉 Chọn cán bộ:", ds_hien)
+                    if chon: ma_chon = chon.split("(")[-1].replace(")", "").strip()
         else:
             ma_chon = st.session_state["ma_cbcc"]
             if df_hoso[df_hoso['id'] == ma_chon].empty:
-                st.warning("❌ Bạn chưa có hồ sơ. Chuyển sang Cập nhật Hồ sơ."); ma_chon = ""
+                st.warning("❌ Bạn chưa có hồ sơ."); ma_chon = ""
 
         if ma_chon:
             info = df_hoso[df_hoso['id'] == ma_chon].iloc[0].fillna("—")
-            c1, c2 = st.columns(2)
-            if c1.button("✏️ Chỉnh sửa hồ sơ", use_container_width=True):
+            col_btn, col_dl = st.columns([1, 1])
+            if col_btn.button("✏️  Chỉnh sửa hồ sơ này", use_container_width=True):
                 st.session_state["edit_target_id"] = info['id']
                 st.session_state["menu_selection"] = "➕ Admin: Cập nhật Hồ sơ (Tất cả)" if is_admin else "➕ Cập nhật Hồ sơ cá nhân"
                 st.rerun()
-
-            df_ct = pd.DataFrame(supabase.table("lich_su_cong_tac").select("*").eq("ma_cbcc", ma_chon).execute().data)
-            df_l = pd.DataFrame(supabase.table("dien_bien_luong").select("*").eq("ma_cbcc", ma_chon).execute().data)
-            df_kt = pd.DataFrame(supabase.table("khen_thuong_ky_luat").select("*").eq("ma_cbcc", ma_chon).execute().data)
-            try: df_gd = pd.DataFrame(supabase.table("quan_he_gia_dinh").select("*").eq("ma_cbcc", ma_chon).execute().data)
+            df_ct = pd.DataFrame(supabase.table("lich_su_cong_tac").select("tu_ngay,den_ngay,vi_tri,don_vi,quyet_dinh_so").eq("ma_cbcc", ma_chon).order("id").execute().data)
+            df_l  = pd.DataFrame(supabase.table("dien_bien_luong").select("ngay_quyet_dinh,bac_luong,he_so,quyet_dinh_so").eq("ma_cbcc", ma_chon).order("id").execute().data)
+            df_kt = pd.DataFrame(supabase.table("khen_thuong_ky_luat").select("ngay_quyet_dinh,loai,noi_dung,quyet_dinh_so").eq("ma_cbcc", ma_chon).order("id").execute().data)
+            try: df_gd = pd.DataFrame(supabase.table("quan_he_gia_dinh").select("*").eq("ma_cbcc", ma_chon).order("loai_quan_he").execute().data)
             except: df_gd = pd.DataFrame()
-
-            c2.download_button("📥 TẢI SYLL 2C-TW", data=create_html_export(info, df_ct, df_l, df_kt, df_gd), file_name=f"SYLL_2C_{info['ho_ten']}.html", mime="text/html", use_container_width=True)
+            html_data = create_html_export(info, df_ct, df_l, df_kt, df_gd)
+            col_dl.download_button(label="📥  TẢI SƠ YẾU LÝ LỊCH (2C-TW)", data=html_data, file_name=f"SYLL_2C_{info['ho_ten'].replace(' ','_')}.html", mime="text/html", use_container_width=True)
 
             st.markdown(f"""
             <div class="profile-card">
                 <div class="profile-badge">MẪU SƠ YẾU LÝ LỊCH CÁN BỘ 2C-TW</div>
                 <div class="profile-name">{info['ho_ten']}</div>
-                <div class="profile-title">🏛️ {info.get('chuc_vu','—')} &nbsp;|&nbsp; {info.get('don_vi','—')}</div><hr class="profile-divider">
+                <div class="profile-title">🏛️ {info.get('chuc_vu','—')} &nbsp;|&nbsp; {info.get('don_vi','—')}</div>
+                <hr class="profile-divider">
                 <div class="profile-info-grid">
                     <div class="info-item"><span class="lbl">Mã cán bộ</span><span class="val">{info.get('id','—')}</span></div>
                     <div class="info-item"><span class="lbl">Ngày sinh</span><span class="val">{info.get('ngay_sinh','—')}</span></div>
                     <div class="info-item"><span class="lbl">Giới tính</span><span class="val">{info.get('gioi_tinh','—')}</span></div>
+                    <div class="info-item"><span class="lbl">Quốc tịch</span><span class="val">{info.get('quoc_tich','Việt Nam')}</span></div>
+                    <div class="info-item"><span class="lbl">Dân tộc</span><span class="val">{info.get('dan_toc','—')}</span></div>
                     <div class="info-item"><span class="lbl">Quê quán</span><span class="val">{info.get('que_quan','—')}</span></div>
+                    <div class="info-item"><span class="lbl">Khai sinh</span><span class="val">{info.get('noi_khai_sinh','—')}</span></div>
+                    <div class="info-item"><span class="lbl">Thường trú</span><span class="val">{info.get('thuong_tru','—')}</span></div>
                     <div class="info-item"><span class="lbl">Nơi ở hiện nay</span><span class="val">{info.get('noi_o_hien_nay','—')}</span></div>
+                    <div class="info-item"><span class="lbl">Nghề nghiệp</span><span class="val">{info.get('nghe_nghiep_ht','—')}</span></div>
                     <div class="info-item"><span class="lbl">Chức vụ Đảng</span><span class="val">{info.get('chuc_vu_dang','—')}</span></div>
-                    <div class="info-item"><span class="lbl">Trình độ chuyên môn</span><span class="val">{info.get('trinh_do_chuyen_mon','—')}</span></div>
-                    <div class="info-item"><span class="lbl">Lý luận chính trị</span><span class="val">{info.get('ly_luan_chinh_tri','—')}</span></div>
-                    <div class="info-item"><span class="lbl">Ngày vào Đảng</span><span class="val">{info.get('ngay_vao_dang','—')}</span></div>
+                    <div class="info-item"><span class="lbl">Ngạch công chức</span><span class="val">{info.get('ngach_cong_chuc','—')}</span></div>
+                    <div class="info-item"><span class="lbl">Giáo dục PT</span><span class="val">{info.get('giao_duc_pt','—')}</span></div>
+                    <div class="info-item"><span class="lbl">Chuyên môn</span><span class="val">{info.get('trinh_do_chuyen_mon','—')}</span></div>
+                    <div class="info-item"><span class="lbl">Học vị</span><span class="val">{info.get('hoc_vi','—')}</span></div>
+                    <div class="info-item"><span class="lbl">Lý luận CT</span><span class="val">{info.get('ly_luan_chinh_tri','—')}</span></div>
+                    <div class="info-item"><span class="lbl">Ngoại ngữ</span><span class="val">{info.get('ngoai_ngu','—')}</span></div>
+                    <div class="info-item"><span class="lbl">Tin học</span><span class="val">{info.get('tin_hoc','—')}</span></div>
+                    <div class="info-item" style="grid-column:span 3;"><span class="lbl">Đảng vụ</span><span class="val">Kết nạp: {info.get('ngay_vao_dang','—')} &nbsp;|&nbsp; Chính thức: {info.get('ngay_chinh_thuc','—')}</span></div>
                 </div>
             </div>
             """, unsafe_allow_html=True)
 
-            t_ct, t_l, t_kt, t_gd = st.tabs(["🏢 Lịch sử công tác", "💰 Diễn biến lương", "🏆 Khen thưởng & Kỷ luật", "👨‍👩‍👧‍👦 Quan hệ gia đình"])
-            with t_ct: st.dataframe(df_ct.drop(columns=['ma_cbcc','id','created_at'], errors='ignore'), use_container_width=True) if not df_ct.empty else st.info("Trống")
-            with t_l: st.dataframe(df_l.drop(columns=['ma_cbcc','id','created_at'], errors='ignore'), use_container_width=True) if not df_l.empty else st.info("Trống")
-            with t_kt: st.dataframe(df_kt.drop(columns=['ma_cbcc','id','created_at'], errors='ignore'), use_container_width=True) if not df_kt.empty else st.info("Trống")
-            with t_gd: st.dataframe(df_gd.drop(columns=['ma_cbcc','id','created_at'], errors='ignore'), use_container_width=True) if not df_gd.empty else st.info("Trống")
+            section_title("📑", "THÔNG TIN CHI TIẾT")
+            t_ct, t_l, t_kt, t_gd = st.tabs(["🏢  Lịch sử công tác","💰  Diễn biến lương","🏆  Khen thưởng & Kỷ luật","👨‍👩‍👧‍👦  Quan hệ gia đình"])
+            with t_ct:
+                if not df_ct.empty: st.dataframe(df_ct.rename(columns={'tu_ngay':'Từ ngày','den_ngay':'Đến ngày','vi_tri':'Vị trí','don_vi':'Đơn vị','quyet_dinh_so':'Quyết định số'}), hide_index=True, use_container_width=True)
+                else: st.info("Chưa có dữ liệu.")
+            with t_l:
+                if not df_l.empty: st.dataframe(df_l.rename(columns={'ngay_quyet_dinh':'Ngày QĐ','bac_luong':'Bậc lương','he_so':'Hệ số','quyet_dinh_so':'Quyết định số'}), hide_index=True, use_container_width=True)
+                else: st.info("Chưa có dữ liệu.")
+            with t_kt:
+                if not df_kt.empty: st.dataframe(df_kt.rename(columns={'ngay_quyet_dinh':'Ngày QĐ','loai':'Loại','noi_dung':'Nội dung','quyet_dinh_so':'Quyết định số'}), hide_index=True, use_container_width=True)
+                else: st.info("Chưa có dữ liệu.")
+            with t_gd:
+                if not df_gd.empty:
+                    st.dataframe(df_gd.drop(columns=['id','ma_cbcc','created_at','thong_tin_khac'], errors='ignore').rename(columns={'loai_quan_he':'Phân loại','quan_he':'Quan hệ','ho_ten':'Họ tên','nam_sinh':'Năm sinh','que_quan_gd':'Quê quán','nghe_nghiep_gd':'Nghề nghiệp','noi_o_gd':'Nơi ở'}), hide_index=True, use_container_width=True)
+                else: st.info("Chưa có dữ liệu.")
 
 # ==========================================
-# MODULE 4: NHẬP LIỆU & CHỈNH SỬA
+# MODULE 4: NHẬP LIỆU
 # ==========================================
 elif menu in ["➕ Cập nhật Hồ sơ cá nhân", "➕ Admin: Cập nhật Hồ sơ (Tất cả)"]:
-    section_title("📝", "TRUNG TÂM NHẬP LIỆU HỒ SƠ HỆ THỐNG")
-    
+    section_title("📝", "TRUNG TÂM NHẬP LIỆU HỒ SƠ")
+
     if is_admin:
-        kieu_nhap = st.radio("Chế độ:", ["Sửa hồ sơ hiện có", "Thêm cán bộ mới"], horizontal=True)
-        if kieu_nhap == "Sửa hồ sơ hiện có":
+        kieu_nhap = st.radio("Chế độ:", ["Chỉnh sửa hồ sơ hiện có", "Thêm cán bộ mới"], horizontal=True)
+        if kieu_nhap == "Chỉnh sửa hồ sơ hiện có":
             ds_cbcc = (df_hoso['id'] + " — " + df_hoso['ho_ten']).tolist() if not df_hoso.empty else []
-            target_id = st.selectbox("Chọn cán bộ:", ds_cbcc).split(" — ")[0] if ds_cbcc else ""
-        else: target_id = st.text_input("Mã CBCC mới:").strip().upper()
+            idx_def = 0
+            if st.session_state["edit_target_id"] and ds_cbcc:
+                for i, val in enumerate(ds_cbcc):
+                    if val.startswith(st.session_state["edit_target_id"]): idx_def = i; break
+            chon_cb = st.selectbox("Chọn cán bộ:", ds_cbcc, index=idx_def) if ds_cbcc else ""
+            target_id = chon_cb.split(" — ")[0] if chon_cb else ""
+        else:
+            target_id = st.text_input("Mã CBCC mới:", placeholder="VD: CV999").strip().upper()
     else:
         target_id = st.session_state["ma_cbcc"]
-        st.info(f"📋 Cập nhật hồ sơ cá nhân — Mã: **{target_id}**")
+        st.info(f"📋 Đang cập nhật hồ sơ: **{target_id}**")
 
-    ex_data = df_hoso[df_hoso['id'] == target_id].iloc[0].fillna("").to_dict() if target_id and not df_hoso.empty and target_id in df_hoso['id'].values else {}
+    ex_data = {}
+    if target_id and not df_hoso.empty:
+        match = df_hoso[df_hoso['id'] == target_id]
+        if not match.empty: ex_data = match.iloc[0].fillna("").to_dict()
 
-    tab_chinh, tab_ct, tab_luong, tab_kt, tab_gd = st.tabs(["👤 Hồ sơ chính", "🏢 Quá trình CT", "💰 Lương", "🏆 Khen thưởng", "👨‍👩‍👧‍👦 Gia đình"])
+    tab_chinh, tab_ct, tab_luong, tab_kt, tab_gd = st.tabs([
+        "👤  Hồ sơ chính","🏢  Lịch sử công tác","💰  Diễn biến lương","🏆  Khen thưởng / Kỷ luật","👨‍👩‍👧‍👦  Quan hệ gia đình"
+    ])
 
     with tab_chinh:
-        with st.form("form_ho_so"):
+        with st.form("form_ho_so", clear_on_submit=False):
             c1, c2, c3 = st.columns(3)
             with c1:
-                ho_ten = st.text_input("Họ và tên *", ex_data.get("ho_ten", ""))
-                ngay_sinh = st.text_input("Ngày sinh", ex_data.get("ngay_sinh", ""))
-                gioi_tinh = st.selectbox("Giới tính", DS_GIOI_TINH, get_idx(DS_GIOI_TINH, ex_data.get("gioi_tinh", "Nam")))
-                quoc_tich = st.text_input("Quốc tịch", ex_data.get("quoc_tich", "Việt Nam"))
-                dan_toc = st.text_input("Dân tộc", ex_data.get("dan_toc", "Kinh"))
+                st.markdown("**📋 Thông tin định danh**")
+                ho_ten = st.text_input("Họ và tên *", value=ex_data.get("ho_ten",""))
+                ngay_sinh = st.text_input("Ngày sinh (DD/MM/YYYY)", value=ex_data.get("ngay_sinh",""))
+                gioi_tinh = st.selectbox("Giới tính", DS_GIOI_TINH, index=get_idx(DS_GIOI_TINH, ex_data.get("gioi_tinh","Nam")))
+                quoc_tich = st.text_input("Quốc tịch", value=ex_data.get("quoc_tich","Việt Nam"))
+                dan_toc = st.text_input("Dân tộc", value=ex_data.get("dan_toc","Kinh"))
             with c2:
-                que_quan = st.text_input("Quê quán", ex_data.get("que_quan", ""))
-                noi_khai_sinh = st.text_input("Nơi sinh", ex_data.get("noi_khai_sinh", ""))
-                thuong_tru = st.text_input("Thường trú", ex_data.get("thuong_tru", ""))
-                noi_o_hien_nay = st.text_input("Nơi ở hiện nay", ex_data.get("noi_o_hien_nay", ""))
+                st.markdown("**📍 Địa giới hành chính**")
+                que_quan = st.text_input("Quê quán", value=ex_data.get("que_quan",""))
+                noi_khai_sinh = st.text_input("Nơi đăng ký khai sinh", value=ex_data.get("noi_khai_sinh",""))
+                thuong_tru = st.text_input("Nơi đăng ký thường trú", value=ex_data.get("thuong_tru",""))
+                noi_o_hien_nay = st.text_input("Nơi ở hiện nay", value=ex_data.get("noi_o_hien_nay",""))
             with c3:
-                don_vi = st.selectbox("Đơn vị *", DS_DON_VI, get_idx(DS_DON_VI, ex_data.get("don_vi", "Lãnh đạo Ban")))
-                chuc_vu = st.selectbox("Chức vụ", DS_CHUC_VU, get_idx(DS_CHUC_VU, ex_data.get("chuc_vu", "Chuyên viên")))
-                chuc_vu_dang = st.text_input("Chức vụ Đảng", ex_data.get("chuc_vu_dang", ""))
-                nghe_nghiep_ht = st.text_input("Nghề nghiệp", ex_data.get("nghe_nghiep_ht", ""))
-                ngach = st.text_input("Ngạch công chức", ex_data.get("ngach_cong_chuc", ""))
+                st.markdown("**👔 Nghiệp vụ & Đảng vụ**")
+                don_vi = st.selectbox("Đơn vị công tác *", DS_DON_VI, index=get_idx(DS_DON_VI, ex_data.get("don_vi","Lãnh đạo Ban")))
+                chuc_vu = st.selectbox("Chức vụ chính quyền", DS_CHUC_VU, index=get_idx(DS_CHUC_VU, ex_data.get("chuc_vu","Chuyên viên")))
+                chuc_vu_dang = st.text_input("Chức vụ trong Đảng", value=ex_data.get("chuc_vu_dang",""))
+                nghe_nghiep_ht = st.text_input("Nghề nghiệp hiện nay", value=ex_data.get("nghe_nghiep_ht",""))
+                ngach = st.text_input("Ngạch công chức", value=ex_data.get("ngach_cong_chuc",""))
 
+            st.write("---")
+            st.markdown("**🎓 Trình độ học vấn**")
             cx1, cx2, cx3, cx4, cx5 = st.columns(5)
-            giao_duc_pt = cx1.text_input("GD Phổ thông", ex_data.get("giao_duc_pt", ""))
-            chuyen_mon = cx2.text_input("Chuyên môn", ex_data.get("trinh_do_chuyen_mon", ""))
-            hoc_vi = cx3.text_input("Học vị", ex_data.get("hoc_vi", ""))
-            ngoai_ngu = cx4.text_input("Ngoại ngữ", ex_data.get("ngoai_ngu", ""))
-            tin_hoc = cx5.text_input("Tin học", ex_data.get("tin_hoc", ""))
+            giao_duc_pt = cx1.text_input("Giáo dục PT", value=ex_data.get("giao_duc_pt",""))
+            chuyen_mon = cx2.text_input("Trình độ chuyên môn", value=ex_data.get("trinh_do_chuyen_mon",""))
+            hoc_vi = cx3.text_input("Học vị", value=ex_data.get("hoc_vi",""))
+            ngoai_ngu = cx4.text_input("Ngoại ngữ", value=ex_data.get("ngoai_ngu",""))
+            tin_hoc = cx5.text_input("Tin học", value=ex_data.get("tin_hoc",""))
 
+            st.write("---")
+            st.markdown("**☭ Lịch sử Đảng viên**")
             cl1, cl2, cl3 = st.columns(3)
-            ly_luan = cl1.selectbox("Lý luận CT", DS_LY_LUAN, get_idx(DS_LY_LUAN, ex_data.get("ly_luan_chinh_tri", "Chưa qua đào tạo")))
-            ngay_ket_nap = cl2.text_input("Ngày vào Đảng", ex_data.get("ngay_vao_dang", ""))
-            ngay_chinh_thuc = cl3.text_input("Ngày chính thức", ex_data.get("ngay_chinh_thuc", ""))
+            ly_luan = cl1.selectbox("Lý luận chính trị", DS_LY_LUAN, index=get_idx(DS_LY_LUAN, ex_data.get("ly_luan_chinh_tri","Chưa qua đào tạo")))
+            ngay_ket_nap = cl2.text_input("Ngày kết nạp Đảng", value=ex_data.get("ngay_vao_dang",""))
+            ngay_chinh_thuc = cl3.text_input("Ngày chính thức", value=ex_data.get("ngay_chinh_thuc",""))
 
-            if st.form_submit_button("💾 LƯU HỒ SƠ CHÍNH", use_container_width=True):
-                if not target_id or not ho_ten: st.error("⚠️ Mã CBCC và Họ tên là bắt buộc.")
+            if st.form_submit_button("💾  LƯU TOÀN BỘ HỒ SƠ CHÍNH", use_container_width=True):
+                if not target_id or not ho_ten:
+                    st.error("⚠️ Bắt buộc phải có Mã CBCC và Họ tên.")
                 else:
-                    data = {"id": target_id, "ho_ten": ho_ten.title(), "ngay_sinh": ngay_sinh, "gioi_tinh": gioi_tinh, "quoc_tich": quoc_tich, "dan_toc": dan_toc, "que_quan": que_quan, "noi_khai_sinh": noi_khai_sinh, "thuong_tru": thuong_tru, "noi_o_hien_nay": noi_o_hien_nay, "don_vi": don_vi, "chuc_vu": chuc_vu, "chuc_vu_dang": chuc_vu_dang, "nghe_nghiep_ht": nghe_nghiep_ht, "ngach_cong_chuc": ngach, "giao_duc_pt": giao_duc_pt, "trinh_do_chuyen_mon": chuyen_mon, "hoc_vi": hoc_vi, "ngoai_ngu": ngoai_ngu, "tin_hoc": tin_hoc, "ly_luan_chinh_tri": ly_luan, "ngay_vao_dang": ngay_ket_nap, "ngay_chinh_thuc": ngay_chinh_thuc}
-                    supabase.table("ho_so_cbcc").upsert(data).execute(); st.cache_data.clear(); st.success("✅ Đã lưu thành công!"); st.rerun()
+                    data = {
+                        "id": target_id, "ho_ten": ho_ten.title(), "ngay_sinh": ngay_sinh,
+                        "gioi_tinh": gioi_tinh, "quoc_tich": quoc_tich, "dan_toc": dan_toc,
+                        "que_quan": que_quan, "noi_khai_sinh": noi_khai_sinh, "thuong_tru": thuong_tru, "noi_o_hien_nay": noi_o_hien_nay,
+                        "don_vi": don_vi, "chuc_vu": chuc_vu, "chuc_vu_dang": chuc_vu_dang, "nghe_nghiep_ht": nghe_nghiep_ht, "ngach_cong_chuc": ngach,
+                        "giao_duc_pt": giao_duc_pt, "trinh_do_chuyen_mon": chuyen_mon, "hoc_vi": hoc_vi, "ngoai_ngu": ngoai_ngu, "tin_hoc": tin_hoc,
+                        "ly_luan_chinh_tri": ly_luan, "ngay_vao_dang": ngay_ket_nap, "ngay_chinh_thuc": ngay_chinh_thuc
+                    }
+                    supabase.table("ho_so_cbcc").upsert(data).execute()
+                    st.session_state["edit_target_id"] = ""
+                    st.success("✅ Đã lưu thành công hồ sơ lên CSDL.")
+                    st.cache_data.clear()
+                    st.rerun()
 
-    def crud_tab(table, f_key, title, cols):
-        with st.form(f"f_{f_key}"):
-            st.write(f"**Thêm {title}**")
-            vals = {fname: st.text_input(flabel) for fname, flabel in cols}
-            if st.form_submit_button(f"➕ THÊM", use_container_width=True):
-                supabase.table(table).insert({"ma_cbcc": target_id, **vals}).execute(); st.rerun()
+    def render_sub_tab(table_name, form_key, title_btn, fields_form):
+        with st.form(f"form_{form_key}"):
+            st.markdown(f"**Thêm mới {title_btn}**")
+            vals = {}
+            cols_form = st.columns(2)
+            for i, (fname, flabel) in enumerate(fields_form):
+                with cols_form[i % 2]: vals[fname] = st.text_input(flabel)
+            if st.form_submit_button(f"➕  THÊM MỚI {title_btn.upper()}", use_container_width=True):
+                supabase.table(table_name).insert({"ma_cbcc": target_id, **vals}).execute()
+                st.success("✅ Đã thêm."); st.rerun()
 
-        try: 
-            raw_data = supabase.table(table).select("*").eq("ma_cbcc", target_id).order("id").execute().data
-            df_sub = pd.DataFrame(raw_data)
+        section_title("🔧", "Chỉnh sửa / Xóa dữ liệu cũ")
+        try: df_sub = pd.DataFrame(supabase.table(table_name).select("*").eq("ma_cbcc", target_id).order("id").execute().data)
         except: df_sub = pd.DataFrame()
 
         if not df_sub.empty:
-            # GIỮ LẠI CỘT 'id' ĐỂ KHÔNG BỊ LỖI, CHỈ BỎ CÁC CỘT HỆ THỐNG
-            df_show = df_sub.drop(columns=['ma_cbcc', 'created_at'], errors='ignore')
-            
-            # Đưa id ra cột đầu tiên cho dễ nhìn
-            cols_order = ['id'] + [c for c in df_show.columns if c != 'id']
-            df_show = df_show[cols_order]
-            
-            # Bỏ disabled=["id"] vì giờ 'id' đã nằm trong bảng, không lo lỗi nữa
-            ed = st.data_editor(df_show, hide_index=True, use_container_width=True)
-            
-            c1, c2 = st.columns([3,1])
-            if c1.button("💾 LƯU THAY ĐỔI", key=f"s_{f_key}", use_container_width=True):
-                # Update từng dòng dựa vào 'id'
-                for i in range(len(ed)):
-                    row_data = ed.iloc[i].to_dict()
-                    row_id = row_data.pop('id') # Lấy id ra để làm điều kiện update
-                    supabase.table(table).update(row_data).eq("id", row_id).execute()
-                st.success("✅ Đã cập nhật!"); st.rerun()
-            
-            del_id = c2.selectbox("Xóa ID:", ["—"] + df_sub['id'].astype(str).tolist(), label_visibility="collapsed", key=f"d_{f_key}")
-            if c2.button("🗑️ XÓA", key=f"b_{f_key}", use_container_width=True) and del_id != "—":
-                supabase.table(table).delete().eq("id", del_id).execute(); st.rerun()
+            edited = st.data_editor(df_sub.drop(columns=['ma_cbcc','created_at'], errors='ignore'), hide_index=True, use_container_width=True, disabled=["id"])
+            cs, cd = st.columns([3, 1])
+            if cs.button(f"💾  LƯU — {title_btn.upper()}", use_container_width=True, key=f"save_{form_key}"):
+                upd = edited.copy(); upd['ma_cbcc'] = target_id
+                supabase.table(table_name).upsert(upd.fillna("").to_dict(orient="records")).execute()
+                st.success("✅ Đã lưu."); st.rerun()
+            del_id = cd.selectbox("ID xóa:", ["—"] + df_sub['id'].astype(str).tolist(), label_visibility="collapsed", key=f"del_sel_{form_key}")
+            if cd.button("🗑️  XÓA", key=f"del_btn_{form_key}", use_container_width=True) and del_id != "—":
+                supabase.table(table_name).delete().eq("id", del_id).execute(); st.rerun()
         else: st.info("Chưa có dữ liệu.")
 
-    with tab_ct: crud_tab("lich_su_cong_tac", "ct", "Công tác", [("tu_ngay","Từ"), ("den_ngay","Đến"), ("vi_tri","Vị trí"), ("don_vi","Đơn vị"), ("quyet_dinh_so","Số QĐ")])
-    with tab_luong: crud_tab("dien_bien_luong", "l", "Lương", [("ngay_quyet_dinh","Ngày QĐ"), ("bac_luong","Bậc"), ("he_so","Hệ số"), ("quyet_dinh_so","Số QĐ")])
-    with tab_kt: crud_tab("khen_thuong_ky_luat", "kt", "KT/KL", [("ngay_quyet_dinh","Ngày QĐ"), ("loai","Loại (Khen thưởng/Kỷ luật)"), ("noi_dung","Nội dung"), ("quyet_dinh_so","Số QĐ")])
+    with tab_ct:
+        render_sub_tab("lich_su_cong_tac","cong_tac","Lịch sử công tác",[("tu_ngay","Từ ngày"),("den_ngay","Đến ngày"),("vi_tri","Vị trí / Chức danh"),("don_vi","Đơn vị công tác"),("quyet_dinh_so","Quyết định số")])
+    with tab_luong:
+        render_sub_tab("dien_bien_luong","luong","Diễn biến lương",[("ngay_quyet_dinh","Ngày quyết định"),("bac_luong","Bậc lương"),("he_so","Hệ số"),("quyet_dinh_so","Quyết định số")])
+
+    with tab_kt:
+        with st.form("form_kt"):
+            st.markdown("**Thêm mới Khen thưởng / Kỷ luật**")
+            c1, c2 = st.columns(2)
+            ngay_qd = c1.text_input("Ngày quyết định")
+            loai = c2.selectbox("Loại", ["Khen thưởng", "Kỷ luật"])
+            noi_dung = st.text_area("Nội dung", height=80)
+            qd_so = st.text_input("Quyết định số")
+            if st.form_submit_button("➕  THÊM MỚI", use_container_width=True):
+                supabase.table("khen_thuong_ky_luat").insert({"ma_cbcc": target_id, "ngay_quyet_dinh": ngay_qd, "loai": loai, "noi_dung": noi_dung, "quyet_dinh_so": qd_so}).execute()
+                st.success("✅ Đã thêm."); st.rerun()
+        section_title("🔧","Chỉnh sửa / Xóa")
+        df_kt2 = pd.DataFrame(supabase.table("khen_thuong_ky_luat").select("*").eq("ma_cbcc", target_id).order("id").execute().data)
+        if not df_kt2.empty:
+            edited_kt = st.data_editor(df_kt2.drop(columns=['ma_cbcc','created_at'], errors='ignore'), hide_index=True, use_container_width=True, disabled=["id"])
+            cs3, cd3 = st.columns([3, 1])
+            if cs3.button("💾  LƯU KHEN THƯỞNG / KỶ LUẬT", use_container_width=True, key="save_kt"):
+                upd = edited_kt.copy(); upd['ma_cbcc'] = target_id
+                supabase.table("khen_thuong_ky_luat").upsert(upd.fillna("").to_dict(orient="records")).execute()
+                st.success("✅ Đã lưu."); st.rerun()
+            del_kt = cd3.selectbox("ID xóa:", ["—"] + df_kt2['id'].astype(str).tolist(), label_visibility="collapsed", key="del_kt")
+            if cd3.button("🗑️  XÓA", key="del_btn_kt", use_container_width=True) and del_kt != "—":
+                supabase.table("khen_thuong_ky_luat").delete().eq("id", del_kt).execute(); st.rerun()
+
     with tab_gd:
-        st.info("📌 Kê khai gia đình (bản thân & bên vợ/chồng). Lưu ý: Nếu đã mất, ghi 'Đã từ trần (năm...)' vào mục Nghề nghiệp.")
-        crud_tab("quan_he_gia_dinh", "gd", "Người thân", [("loai_quan_he","Bản thân hay Vợ/Chồng"), ("quan_he","Quan hệ (Bố/Mẹ/Vợ...)"), ("ho_ten","Họ tên"), ("nam_sinh","Năm sinh"), ("que_quan_gd","Quê quán"), ("nghe_nghiep_gd","Nghề nghiệp"), ("noi_o_gd","Nơi ở")])
+        st.info("📌 Kê khai quan hệ gia đình: bố, mẹ, vợ/chồng, con, anh chị em ruột (và bên vợ/chồng).")
+        with st.form("form_giadinh"):
+            c1, c2, c3 = st.columns([1, 1, 2])
+            loai_qh = c1.selectbox("Phân loại", ["Bản thân", "Bên vợ/chồng"])
+            quan_he = c2.selectbox("Quan hệ", ["Bố đẻ","Mẹ đẻ","Bố vợ","Mẹ vợ","Bố chồng","Mẹ chồng","Vợ","Chồng","Con đẻ","Anh ruột","Chị ruột","Em ruột"])
+            ho_ten_gd = c3.text_input("Họ và tên")
+            c4, c5 = st.columns([1, 3])
+            nam_sinh_gd = c4.text_input("Năm sinh")
+            que_quan_gd = c5.text_input("Quê quán")
+            c6, c7 = st.columns(2)
+            nghe_nghiep_gd = c6.text_input("Nghề nghiệp, chức vụ, đơn vị")
+            noi_o_gd = c7.text_input("Nơi ở hiện nay")
+            if st.form_submit_button("➕  THÊM NGƯỜI THÂN", use_container_width=True):
+                try:
+                    supabase.table("quan_he_gia_dinh").insert({"ma_cbcc": target_id, "loai_quan_he": loai_qh, "quan_he": quan_he, "ho_ten": ho_ten_gd, "nam_sinh": nam_sinh_gd, "que_quan_gd": que_quan_gd, "nghe_nghiep_gd": nghe_nghiep_gd, "noi_o_gd": noi_o_gd}).execute()
+                    st.success("✅ Đã thêm."); st.rerun()
+                except Exception as e: st.error(f"Lỗi: {e}")
+        section_title("🔧","Chỉnh sửa / Xóa")
+        try:
+            df_gd2 = pd.DataFrame(supabase.table("quan_he_gia_dinh").select("*").eq("ma_cbcc", target_id).order("loai_quan_he").execute().data)
+            if not df_gd2.empty:
+                edited_gd = st.data_editor(df_gd2.drop(columns=['ma_cbcc','created_at','thong_tin_khac'], errors='ignore'), hide_index=True, use_container_width=True, disabled=["id"])
+                cs4, cd4 = st.columns([3, 1])
+                if cs4.button("💾  LƯU QUAN HỆ GIA ĐÌNH", use_container_width=True, key="save_gd"):
+                    upd = edited_gd.copy(); upd['ma_cbcc'] = target_id
+                    supabase.table("quan_he_gia_dinh").upsert(upd.fillna("").to_dict(orient="records")).execute()
+                    st.success("✅ Đã lưu."); st.rerun()
+                del_gd = cd4.selectbox("ID xóa:", ["—"] + df_gd2['id'].astype(str).tolist(), label_visibility="collapsed", key="del_gd")
+                if cd4.button("🗑️  XÓA", key="del_btn_gd", use_container_width=True) and del_gd != "—":
+                    supabase.table("quan_he_gia_dinh").delete().eq("id", del_gd).execute(); st.rerun()
+            else: st.info("Chưa có dữ liệu gia đình.")
+        except Exception as e: st.warning(f"⚠️ Lỗi tải dữ liệu: {e}")
