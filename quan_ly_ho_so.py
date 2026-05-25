@@ -25,21 +25,43 @@ st.set_page_config(
 # Thêm CSS ép sidebar luôn hiển thị nút mở rộng và phục hồi Header trên Mobile
 st.markdown("""
 <style>
-    /* Làm nổi bật nút mũi tên/hamburger menu trên điện thoại */
+    /* 1. Đưa nút menu về đúng vị trí chuẩn (góc trên bên trái) */
     [data-testid="collapsedControl"] {
-        visibility: visible !important;
-        background-color: #0A1628 !important; /* Xanh Navy */
-        color: #D4AF37 !important; /* Màu Vàng Gold */
-        border-radius: 6px;
-        top: 15px;
-        left: 15px;
-        z-index: 99999 !important;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        position: fixed !important;
+        top: 15px !important;
+        left: 15px !important;
+        z-index: 999999 !important;
+        background-color: #0A1628 !important; /* Navy */
+        color: #D4AF37 !important;            /* Gold */
+        width: 45px !important;
+        height: 45px !important;
+        border-radius: 8px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3) !important;
     }
+
+    /* 2. Làm nút menu nổi bật và dễ bấm */
     [data-testid="collapsedControl"] svg {
         fill: #D4AF37 !important;
+        width: 25px !important;
+        height: 25px !important;
     }
-    [data-testid="stSidebar"] { z-index: 9999 !important; }
+
+    /* 3. Đảm bảo sidebar không bị đè bởi bất kỳ thứ gì khác */
+    [data-testid="stSidebar"] {
+        z-index: 9999999 !important;
+    }
+
+    /* 4. Giữ Header sạch sẽ, không bị vướng nút menu */
+    .gov-header {
+        padding-left: 70px !important; /* Đẩy text sang phải để không chạm nút menu */
+        position: relative;
+    }
+
+    /* Ẩn bớt các thành phần thừa */
+    #MainMenu, footer { visibility: hidden !important; }
 </style>
 """, unsafe_allow_html=True)
 
