@@ -361,7 +361,7 @@ def get_idx(lst, val):
 def section_title(icon, text):
     st.markdown(f'<div class="section-title">{icon} {text}</div>', unsafe_allow_html=True)
 
-def create_html_export(info, df_ct, df_l, df_kt, df_gd):
+def create_html_export(info, df_ct, df_l, df_kt):
     def tbl(df, rename_map):
         if df.empty:
             return "<tr><td colspan='10' style='text-align:center;color:#888;padding:16px;'>Chưa có dữ liệu.</td></tr>"
@@ -373,17 +373,6 @@ def create_html_export(info, df_ct, df_l, df_kt, df_gd):
     ct_rows = tbl(df_ct, {'tu_ngay':'Từ ngày','den_ngay':'Đến ngày','vi_tri':'Vị trí','don_vi':'Đơn vị','quyet_dinh_so':'Quyết định số'})
     l_rows  = tbl(df_l,  {'ngay_quyet_dinh':'Ngày QĐ','bac_luong':'Bậc lương','he_so':'Hệ số','quyet_dinh_so':'Quyết định số'})
     kt_rows = tbl(df_kt, {'ngay_quyet_dinh':'Ngày QĐ','loai':'Loại','noi_dung':'Nội dung','quyet_dinh_so':'Quyết định số'})
-
-    gd_html = ""
-    if not df_gd.empty:
-        df_gd2 = df_gd.drop(columns=['id','ma_cbcc','created_at','thong_tin_khac'], errors='ignore').rename(columns={
-            'loai_quan_he':'Phân loại','quan_he':'Quan hệ','ho_ten':'Họ tên',
-            'nam_sinh':'Năm sinh','que_quan_gd':'Quê quán','nghe_nghiep_gd':'Nghề nghiệp','noi_o_gd':'Nơi ở'
-        })
-        header_gd = "<tr>" + "".join(f"<th>{c}</th>" for c in df_gd2.columns) + "</tr>"
-        gd_html = header_gd + "".join("<tr>" + "".join(f"<td>{v}</td>" for v in row) + "</tr>" for _, row in df_gd2.iterrows())
-    else:
-        gd_html = "<tr><td colspan='7' style='text-align:center;color:#888;padding:16px;'>Chưa có dữ liệu.</td></tr>"
 
     html = f"""<!DOCTYPE html>
 <html lang="vi"><head><meta charset="utf-8">
@@ -428,8 +417,6 @@ def create_html_export(info, df_ct, df_l, df_kt, df_gd):
 <table class="data-table">{l_rows}</table>
 <h3>IV. Khen thưởng & kỷ luật</h3>
 <table class="data-table">{kt_rows}</table>
-<h3>V. Quan hệ gia đình</h3>
-<table class="data-table">{gd_html}</table>
 <div class="footer">Xuất từ Hệ thống Quản lý Hồ sơ CBCC — Ban Tuyên giáo và Dân vận Tỉnh ủy Tuyên Quang</div>
 </body></html>"""
     return html.encode('utf-8')
@@ -788,9 +775,7 @@ elif menu in ["🔍 Tra cứu & Xem Hồ sơ", "🔍 Hồ sơ của tôi"]:
             df_ct = pd.DataFrame(supabase.table("lich_su_cong_tac").select("tu_ngay,den_ngay,vi_tri,don_vi,quyet_dinh_so").eq("ma_cbcc", ma_chon).order("id").execute().data)
             df_l  = pd.DataFrame(supabase.table("dien_bien_luong").select("ngay_quyet_dinh,bac_luong,he_so,quyet_dinh_so").eq("ma_cbcc", ma_chon).order("id").execute().data)
             df_kt = pd.DataFrame(supabase.table("khen_thuong_ky_luat").select("ngay_quyet_dinh,loai,noi_dung,quyet_dinh_so").eq("ma_cbcc", ma_chon).order("id").execute().data)
-            try: df_gd = pd.DataFrame(supabase.table("quan_he_gia_dinh").select("*").eq("ma_cbcc", ma_chon).order("loai_quan_he").execute().data)
-            except: df_gd = pd.DataFrame()
-            html_data = create_html_export(info, df_ct, df_l, df_kt, df_gd)
+            html_data = create_html_export(info, df_ct, df_l, df_kt)
             col_dl.download_button(label="📥  TẢI SƠ YẾU LÝ LỊCH (2C-TW)", data=html_data, file_name=f"SYLL_2C_{info['ho_ten'].replace(' ','_')}.html", mime="text/html", use_container_width=True)
 
             st.markdown(f"""
@@ -824,7 +809,7 @@ elif menu in ["🔍 Tra cứu & Xem Hồ sơ", "🔍 Hồ sơ của tôi"]:
             """, unsafe_allow_html=True)
 
             section_title("📑", "THÔNG TIN CHI TIẾT")
-            t_ct, t_l, t_kt, t_gd = st.tabs(["🏢  Lịch sử công tác","💰  Diễn biến lương","🏆  Khen thưởng & Kỷ luật","👨‍👩‍👧‍👦  Quan hệ gia đình"])
+            t_ct, t_l, t_kt = st.tabs(["🏢  Lịch sử công tác","💰  Diễn biến lương","🏆  Khen thưởng & Kỷ luật"])
             with t_ct:
                 if not df_ct.empty: st.dataframe(df_ct.rename(columns={'tu_ngay':'Từ ngày','den_ngay':'Đến ngày','vi_tri':'Vị trí','don_vi':'Đơn vị','quyet_dinh_so':'Quyết định số'}), hide_index=True, use_container_width=True)
                 else: st.info("Chưa có dữ liệu.")
@@ -833,10 +818,6 @@ elif menu in ["🔍 Tra cứu & Xem Hồ sơ", "🔍 Hồ sơ của tôi"]:
                 else: st.info("Chưa có dữ liệu.")
             with t_kt:
                 if not df_kt.empty: st.dataframe(df_kt.rename(columns={'ngay_quyet_dinh':'Ngày QĐ','loai':'Loại','noi_dung':'Nội dung','quyet_dinh_so':'Quyết định số'}), hide_index=True, use_container_width=True)
-                else: st.info("Chưa có dữ liệu.")
-            with t_gd:
-                if not df_gd.empty:
-                    st.dataframe(df_gd.drop(columns=['id','ma_cbcc','created_at','thong_tin_khac'], errors='ignore').rename(columns={'loai_quan_he':'Phân loại','quan_he':'Quan hệ','ho_ten':'Họ tên','nam_sinh':'Năm sinh','que_quan_gd':'Quê quán','nghe_nghiep_gd':'Nghề nghiệp','noi_o_gd':'Nơi ở'}), hide_index=True, use_container_width=True)
                 else: st.info("Chưa có dữ liệu.")
 
 # ==========================================
@@ -866,8 +847,8 @@ elif menu in ["➕ Cập nhật Hồ sơ cá nhân", "➕ Admin: Cập nhật H�
         match = df_hoso[df_hoso['id'] == target_id]
         if not match.empty: ex_data = match.iloc[0].fillna("").to_dict()
 
-    tab_chinh, tab_ct, tab_luong, tab_kt, tab_gd = st.tabs([
-        "👤  Hồ sơ chính","🏢  Lịch sử công tác","💰  Diễn biến lương","🏆  Khen thưởng / Kỷ luật","👨‍👩‍👧‍👦  Quan hệ gia đình"
+    tab_chinh, tab_ct, tab_luong, tab_kt = st.tabs([
+        "👤  Hồ sơ chính","🏢  Lịch sử công tác","💰  Diễn biến lương","🏆  Khen thưởng / Kỷ luật"
     ])
 
     with tab_chinh:
@@ -983,37 +964,3 @@ elif menu in ["➕ Cập nhật Hồ sơ cá nhân", "➕ Admin: Cập nhật H�
             del_kt = cd3.selectbox("ID xóa:", ["—"] + df_kt2['id'].astype(str).tolist(), label_visibility="collapsed", key="del_kt")
             if cd3.button("🗑️  XÓA", key="del_btn_kt", use_container_width=True) and del_kt != "—":
                 supabase.table("khen_thuong_ky_luat").delete().eq("id", del_kt).execute(); st.rerun()
-
-    with tab_gd:
-        st.info("📌 Kê khai quan hệ gia đình: bố, mẹ, vợ/chồng, con, anh chị em ruột (và bên vợ/chồng).")
-        with st.form("form_giadinh"):
-            c1, c2, c3 = st.columns([1, 1, 2])
-            loai_qh = c1.selectbox("Phân loại", ["Bản thân", "Bên vợ/chồng"])
-            quan_he = c2.selectbox("Quan hệ", ["Bố đẻ","Mẹ đẻ","Bố vợ","Mẹ vợ","Bố chồng","Mẹ chồng","Vợ","Chồng","Con đẻ","Anh ruột","Chị ruột","Em ruột"])
-            ho_ten_gd = c3.text_input("Họ và tên")
-            c4, c5 = st.columns([1, 3])
-            nam_sinh_gd = c4.text_input("Năm sinh")
-            que_quan_gd = c5.text_input("Quê quán")
-            c6, c7 = st.columns(2)
-            nghe_nghiep_gd = c6.text_input("Nghề nghiệp, chức vụ, đơn vị")
-            noi_o_gd = c7.text_input("Nơi ở hiện nay")
-            if st.form_submit_button("➕  THÊM NGƯỜI THÂN", use_container_width=True):
-                try:
-                    supabase.table("quan_he_gia_dinh").insert({"ma_cbcc": target_id, "loai_quan_he": loai_qh, "quan_he": quan_he, "ho_ten": ho_ten_gd, "nam_sinh": nam_sinh_gd, "que_quan_gd": que_quan_gd, "nghe_nghiep_gd": nghe_nghiep_gd, "noi_o_gd": noi_o_gd}).execute()
-                    st.success("✅ Đã thêm."); st.rerun()
-                except Exception as e: st.error(f"Lỗi: {e}")
-        section_title("🔧","Chỉnh sửa / Xóa")
-        try:
-            df_gd2 = pd.DataFrame(supabase.table("quan_he_gia_dinh").select("*").eq("ma_cbcc", target_id).order("loai_quan_he").execute().data)
-            if not df_gd2.empty:
-                edited_gd = st.data_editor(df_gd2.drop(columns=['ma_cbcc','created_at','thong_tin_khac'], errors='ignore'), hide_index=True, use_container_width=True, disabled=["id"])
-                cs4, cd4 = st.columns([3, 1])
-                if cs4.button("💾  LƯU QUAN HỆ GIA ĐÌNH", use_container_width=True, key="save_gd"):
-                    upd = edited_gd.copy(); upd['ma_cbcc'] = target_id
-                    supabase.table("quan_he_gia_dinh").upsert(upd.fillna("").to_dict(orient="records")).execute()
-                    st.success("✅ Đã lưu."); st.rerun()
-                del_gd = cd4.selectbox("ID xóa:", ["—"] + df_gd2['id'].astype(str).tolist(), label_visibility="collapsed", key="del_gd")
-                if cd4.button("🗑️  XÓA", key="del_btn_gd", use_container_width=True) and del_gd != "—":
-                    supabase.table("quan_he_gia_dinh").delete().eq("id", del_gd).execute(); st.rerun()
-            else: st.info("Chưa có dữ liệu gia đình.")
-        except Exception as e: st.warning(f"⚠️ Lỗi tải dữ liệu: {e}")
