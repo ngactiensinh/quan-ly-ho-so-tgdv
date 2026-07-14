@@ -90,8 +90,12 @@ st.markdown("""
 
     /* ---- FORMS ---- */
     div[data-testid="stForm"] { background: #fff; border: 1px solid rgba(212,175,55,0.25); border-top: 3px solid var(--gold); border-radius: 10px; padding: 24px !important; box-shadow: var(--shadow-sm); }
-    .stTextInput input, .stSelectbox select, .stTextArea textarea { border: 1.5px solid #e0d8cc !important; border-radius: 6px !important; background: var(--cream) !important; font-family: 'Source Sans 3', sans-serif !important; transition: border-color 0.2s !important; }
-    .stTextInput input:focus, .stSelectbox select:focus, .stTextArea textarea:focus { border-color: var(--red-primary) !important; box-shadow: 0 0 0 3px rgba(200,16,46,0.08) !important; }
+    .stTextInput input, .stTextArea textarea { border: 1.5px solid #e0d8cc !important; border-radius: 6px !important; background: var(--cream) !important; font-family: 'Source Sans 3', sans-serif !important; transition: border-color 0.2s !important; }
+    .stTextInput input:focus, .stTextArea textarea:focus { border-color: var(--red-primary) !important; box-shadow: 0 0 0 3px rgba(200,16,46,0.08) !important; }
+    .stSelectbox div[data-baseweb="select"] > div { border: 1.5px solid #e0d8cc !important; border-radius: 6px !important; background: var(--cream) !important; font-family: 'Source Sans 3', sans-serif !important; transition: border-color 0.2s !important; }
+    .stSelectbox div[data-baseweb="select"] > div:hover { border-color: var(--red-primary) !important; }
+    .stSelectbox div[data-baseweb="select"] input { background: transparent !important; }
+    .stSelectbox ul[data-baseweb="menu"] { background: var(--cream) !important; }
 
     /* ---- BUTTONS ---- */
     div[data-testid="stButton"] > button,
