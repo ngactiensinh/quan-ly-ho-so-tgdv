@@ -124,6 +124,26 @@ st.markdown("""
     /* ---- EXPANDER ---- */
     [data-testid="stExpander"] summary { font-weight: 600 !important; color: var(--navy-mid) !important; background: var(--off-white) !important; border-left: 4px solid var(--gold) !important; border-radius: 6px !important; padding: 12px 16px !important; }
 
+    /* ---- SIDEBAR EXPANDER (VD: Đổi mật khẩu) - CHỮ VÀ VIỀN NAVY DỄ NHÌN ---- */
+    [data-testid="stSidebar"] [data-testid="stExpander"] { background: #fff !important; border-radius: 8px !important; overflow: hidden; }
+    [data-testid="stSidebar"] [data-testid="stExpander"] summary { color: var(--navy-mid) !important; }
+    [data-testid="stSidebar"] [data-testid="stExpander"] label,
+    [data-testid="stSidebar"] [data-testid="stExpander"] p,
+    [data-testid="stSidebar"] [data-testid="stExpander"] span { color: var(--navy-mid) !important; }
+    [data-testid="stSidebar"] [data-testid="stExpander"] .stTextInput input {
+        border: 1.8px solid var(--navy-mid) !important;
+        color: var(--navy-mid) !important;
+        background: #fff !important;
+        font-weight: 600 !important;
+        border-radius: 6px !important;
+    }
+    [data-testid="stSidebar"] [data-testid="stExpander"] .stTextInput input::placeholder { color: #8a93a3 !important; }
+    [data-testid="stSidebar"] [data-testid="stExpander"] .stTextInput input:focus {
+        border-color: var(--red-primary) !important;
+        box-shadow: 0 0 0 3px rgba(200,16,46,0.12) !important;
+    }
+    [data-testid="stSidebar"] [data-testid="stExpander"] svg { fill: var(--navy-mid) !important; }
+
     #MainMenu, footer { visibility: hidden !important; }
     .block-container { padding-top: 24px !important; padding-bottom: 40px !important; }
 
@@ -706,14 +726,53 @@ if menu == "📊 Dashboard":
         })
         st.dataframe(df_show, hide_index=True, use_container_width=True)
 
+        from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+        from openpyxl.utils import get_column_letter
+
         excel_buffer = io.BytesIO()
         with pd.ExcelWriter(excel_buffer, engine='openpyxl') as writer:
             df_show.to_excel(writer, index=False, sheet_name='Danh sách CBCC')
-            worksheet = writer.sheets['Danh sách CBCC']
-            # Tự động canh độ rộng cột cho dễ nhìn
-            for i, col in enumerate(df_show.columns):
-                max_len = max(df_show[col].astype(str).map(len).max() if not df_show.empty else 10, len(str(col))) + 3
-                worksheet.column_dimensions[chr(65 + i) if i < 26 else 'A'].width = min(max_len, 45)
+            ws = writer.sheets['Danh sách CBCC']
+
+            # ---- Định dạng dòng tiêu đề ----
+            header_fill = PatternFill(start_color="0A1628", end_color="0A1628", fill_type="solid")
+            header_font = Font(name="Calibri", size=11, bold=True, color="FFFFFF")
+            header_align = Alignment(horizontal="center", vertical="center", wrap_text=True)
+            header_border = Border(bottom=Side(style='medium', color='D4AF37'))
+            for col_idx in range(1, len(df_show.columns) + 1):
+                cell = ws.cell(row=1, column=col_idx)
+                cell.fill = header_fill
+                cell.font = header_font
+                cell.alignment = header_align
+                cell.border = header_border
+            ws.row_dimensions[1].height = 26
+
+            # ---- Định dạng vùng dữ liệu: viền, canh giữa, dòng xen kẽ, tự co giãn cột ----
+            thin_border = Border(
+                left=Side(style='thin', color='DCE0E5'), right=Side(style='thin', color='DCE0E5'),
+                top=Side(style='thin', color='DCE0E5'), bottom=Side(style='thin', color='DCE0E5')
+            )
+            center_cols = {'Mã CB', 'Ngày sinh', 'Giới tính', 'Học vị', 'Lý luận CT', 'Ngạch CC'}
+            for col_idx, col_name in enumerate(df_show.columns, start=1):
+                col_letter = get_column_letter(col_idx)
+                max_len = max(
+                    df_show[col_name].astype(str).map(len).max() if not df_show.empty else 10,
+                    len(str(col_name))
+                )
+                ws.column_dimensions[col_letter].width = min(max_len + 4, 42)
+                for row_idx in range(2, len(df_show) + 2):
+                    cell = ws.cell(row=row_idx, column=col_idx)
+                    cell.border = thin_border
+                    cell.alignment = Alignment(
+                        horizontal="center" if col_name in center_cols else "left",
+                        vertical="center"
+                    )
+                    if row_idx % 2 == 0:
+                        cell.fill = PatternFill(start_color="F8F4EF", end_color="F8F4EF", fill_type="solid")
+
+            ws.freeze_panes = "A2"
+            ws.auto_filter.ref = ws.dimensions
+
         excel_data = excel_buffer.getvalue()
 
         st.download_button(
