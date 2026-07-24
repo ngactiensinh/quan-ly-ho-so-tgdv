@@ -10,6 +10,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 import base64
 import os
+import io
 from datetime import datetime
 
 # ==========================================
@@ -305,6 +306,29 @@ with st.sidebar:
             st.session_state[key] = defaults[key]
         st.rerun()
 
+    with st.expander("🔑  Đổi mật khẩu"):
+        with st.form("form_doi_mat_khau", clear_on_submit=True):
+            mk_hien_tai = st.text_input("Mật khẩu hiện tại", type="password")
+            mk_moi = st.text_input("Mật khẩu mới", type="password")
+            mk_moi_xacnhan = st.text_input("Xác nhận mật khẩu mới", type="password")
+            if st.form_submit_button("💾  CẬP NHẬT MẬT KHẨU", use_container_width=True):
+                if not mk_hien_tai or not mk_moi or not mk_moi_xacnhan:
+                    st.error("⚠️ Vui lòng điền đầy đủ các trường.")
+                elif mk_moi != mk_moi_xacnhan:
+                    st.error("⚠️ Mật khẩu mới xác nhận không khớp.")
+                else:
+                    try:
+                        user_now = supabase.table("tai_khoan").select("mat_khau").eq("ma_cbcc", st.session_state["ma_cbcc"]).execute().data
+                        if not user_now:
+                            st.error("❌ Không tìm thấy tài khoản.")
+                        elif user_now[0]["mat_khau"] != mk_hien_tai:
+                            st.error("❌ Mật khẩu hiện tại không đúng.")
+                        else:
+                            supabase.table("tai_khoan").update({"mat_khau": mk_moi}).eq("ma_cbcc", st.session_state["ma_cbcc"]).execute()
+                            st.success("✅ Đã đổi mật khẩu thành công.")
+                    except Exception as e:
+                        st.error(f"Lỗi: {e}")
+
     st.markdown("---")
     st.markdown("<div style='font-size:10px;color:rgba(212,175,55,0.5);letter-spacing:1.5px;text-transform:uppercase;padding:0 4px;margin-bottom:8px;'>Chức năng</div>", unsafe_allow_html=True)
 
@@ -375,7 +399,7 @@ def create_html_export(info, df_ct, df_l, df_kt):
         return header + rows
 
     ct_rows = tbl(df_ct, {'tu_ngay':'Từ ngày','den_ngay':'Đến ngày','vi_tri':'Vị trí','don_vi':'Đơn vị','quyet_dinh_so':'Quyết định số'})
-    l_rows  = tbl(df_l,  {'ngay_quyet_dinh':'Ngày QĐ','bac_luong':'Bậc lương','he_so':'Hệ số','quyet_dinh_so':'Quyết định số'})
+    l_rows  = tbl(df_l,  {'ngay_quyet_dinh':'Ngày QĐ','bac_luong':'Bậc lương','he_so':'Hệ số','ngay_nang_bac_tiep_theo':'Ngày nâng bậc tiếp theo','quyet_dinh_so':'Quyết định số'})
     kt_rows = tbl(df_kt, {'ngay_quyet_dinh':'Ngày QĐ','loai':'Loại','noi_dung':'Nội dung','quyet_dinh_so':'Quyết định số'})
 
     html = f"""<!DOCTYPE html>
@@ -681,12 +705,22 @@ if menu == "📊 Dashboard":
             'trinh_do_chuyen_mon':'Chuyên môn','ly_luan_chinh_tri':'Lý luận CT','ngach_cong_chuc':'Ngạch CC'
         })
         st.dataframe(df_show, hide_index=True, use_container_width=True)
-        csv_data = df_show.to_csv(index=False, encoding='utf-8-sig').encode('utf-8-sig')
+
+        excel_buffer = io.BytesIO()
+        with pd.ExcelWriter(excel_buffer, engine='openpyxl') as writer:
+            df_show.to_excel(writer, index=False, sheet_name='Danh sách CBCC')
+            worksheet = writer.sheets['Danh sách CBCC']
+            # Tự động canh độ rộng cột cho dễ nhìn
+            for i, col in enumerate(df_show.columns):
+                max_len = max(df_show[col].astype(str).map(len).max() if not df_show.empty else 10, len(str(col))) + 3
+                worksheet.column_dimensions[chr(65 + i) if i < 26 else 'A'].width = min(max_len, 45)
+        excel_data = excel_buffer.getvalue()
+
         st.download_button(
-            label="📥  XUẤT DANH SÁCH (.CSV)",
-            data=csv_data,
-            file_name=f"DanhSach_CBCC_{datetime.now().strftime('%Y%m%d')}.csv",
-            mime="text/csv"
+            label="📥  XUẤT DANH SÁCH (.XLSX)",
+            data=excel_data,
+            file_name=f"DanhSach_CBCC_{datetime.now().strftime('%Y%m%d')}.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
 
 # ==========================================
@@ -743,6 +777,41 @@ elif menu == "🛡️ Admin: Duyệt Tài khoản":
                         supabase.table("ho_so_cbcc").delete().eq("id", ma_xoa).execute()
                         st.success(f"✅ Đã xóa {ma_xoa}."); st.rerun()
 
+            st.markdown("---")
+            section_title("✏️", "Đổi Mã Cán bộ, Công chức")
+            st.caption("Dùng để sắp xếp lại Mã CBCC cho gọn, đẹp, đúng thứ tự. Hệ thống sẽ tự động cập nhật đồng bộ Mã mới trên toàn bộ dữ liệu liên quan (tài khoản, hồ sơ, lịch sử công tác, lương, khen thưởng/kỷ luật).")
+            cme1, cme2 = st.columns(2)
+            with cme1:
+                doi_ma_chon = st.selectbox("Chọn cán bộ cần đổi mã:", ["— Chọn —"] + ds_hd, key="doi_ma_sel")
+            with cme2:
+                ma_moi = st.text_input("Mã CBCC mới:", placeholder="VD: CV001", key="ma_moi_input").strip().upper()
+
+            if st.button("🔄  XÁC NHẬN ĐỔI MÃ", use_container_width=True, key="btn_doi_ma"):
+                if doi_ma_chon == "— Chọn —" or not ma_moi:
+                    st.error("⚠️ Vui lòng chọn cán bộ và nhập Mã mới.")
+                else:
+                    ma_cu = doi_ma_chon.split(" — ")[0]
+                    if ma_cu.upper() == "ADMIN":
+                        st.error("⚠️ Không thể đổi mã của tài khoản Admin gốc!")
+                    elif ma_moi == ma_cu:
+                        st.warning("Mã mới trùng với Mã hiện tại, không có gì để đổi.")
+                    elif len(supabase.table("tai_khoan").select("ma_cbcc").eq("ma_cbcc", ma_moi).execute().data) > 0:
+                        st.error(f"⚠️ Mã '{ma_moi}' đã được sử dụng bởi cán bộ khác. Vui lòng chọn mã khác.")
+                    else:
+                        try:
+                            supabase.table("tai_khoan").update({"ma_cbcc": ma_moi}).eq("ma_cbcc", ma_cu).execute()
+                            supabase.table("ho_so_cbcc").update({"id": ma_moi}).eq("id", ma_cu).execute()
+                            supabase.table("lich_su_cong_tac").update({"ma_cbcc": ma_moi}).eq("ma_cbcc", ma_cu).execute()
+                            supabase.table("dien_bien_luong").update({"ma_cbcc": ma_moi}).eq("ma_cbcc", ma_cu).execute()
+                            supabase.table("khen_thuong_ky_luat").update({"ma_cbcc": ma_moi}).eq("ma_cbcc", ma_cu).execute()
+                            if st.session_state["ma_cbcc"] == ma_cu:
+                                st.session_state["ma_cbcc"] = ma_moi
+                            st.success(f"✅ Đã đổi Mã CBCC từ **{ma_cu}** thành **{ma_moi}** trên toàn bộ hệ thống.")
+                            st.cache_data.clear()
+                            st.rerun()
+                        except Exception as e:
+                            st.error(f"Lỗi khi đổi mã: {e}")
+
 # ==========================================
 # MODULE 3: XEM HỒ SƠ
 # ==========================================
@@ -777,7 +846,7 @@ elif menu in ["🔍 Tra cứu & Xem Hồ sơ", "🔍 Hồ sơ của tôi"]:
                 st.session_state["menu_selection"] = "➕ Admin: Cập nhật Hồ sơ (Tất cả)" if is_admin else "➕ Cập nhật Hồ sơ cá nhân"
                 st.rerun()
             df_ct = pd.DataFrame(supabase.table("lich_su_cong_tac").select("tu_ngay,den_ngay,vi_tri,don_vi,quyet_dinh_so").eq("ma_cbcc", ma_chon).order("id").execute().data)
-            df_l  = pd.DataFrame(supabase.table("dien_bien_luong").select("ngay_quyet_dinh,bac_luong,he_so,quyet_dinh_so").eq("ma_cbcc", ma_chon).order("id").execute().data)
+            df_l  = pd.DataFrame(supabase.table("dien_bien_luong").select("ngay_quyet_dinh,bac_luong,he_so,ngay_nang_bac_tiep_theo,quyet_dinh_so").eq("ma_cbcc", ma_chon).order("id").execute().data)
             df_kt = pd.DataFrame(supabase.table("khen_thuong_ky_luat").select("ngay_quyet_dinh,loai,noi_dung,quyet_dinh_so").eq("ma_cbcc", ma_chon).order("id").execute().data)
             html_data = create_html_export(info, df_ct, df_l, df_kt)
             col_dl.download_button(label="📥  TẢI SƠ YẾU LÝ LỊCH (2C-TW)", data=html_data, file_name=f"SYLL_2C_{info['ho_ten'].replace(' ','_')}.html", mime="text/html", use_container_width=True)
@@ -818,7 +887,7 @@ elif menu in ["🔍 Tra cứu & Xem Hồ sơ", "🔍 Hồ sơ của tôi"]:
                 if not df_ct.empty: st.dataframe(df_ct.rename(columns={'tu_ngay':'Từ ngày','den_ngay':'Đến ngày','vi_tri':'Vị trí','don_vi':'Đơn vị','quyet_dinh_so':'Quyết định số'}), hide_index=True, use_container_width=True)
                 else: st.info("Chưa có dữ liệu.")
             with t_l:
-                if not df_l.empty: st.dataframe(df_l.rename(columns={'ngay_quyet_dinh':'Ngày QĐ','bac_luong':'Bậc lương','he_so':'Hệ số','quyet_dinh_so':'Quyết định số'}), hide_index=True, use_container_width=True)
+                if not df_l.empty: st.dataframe(df_l.rename(columns={'ngay_quyet_dinh':'Ngày QĐ','bac_luong':'Bậc lương','he_so':'Hệ số','ngay_nang_bac_tiep_theo':'Ngày nâng bậc tiếp theo','quyet_dinh_so':'Quyết định số'}), hide_index=True, use_container_width=True)
                 else: st.info("Chưa có dữ liệu.")
             with t_kt:
                 if not df_kt.empty: st.dataframe(df_kt.rename(columns={'ngay_quyet_dinh':'Ngày QĐ','loai':'Loại','noi_dung':'Nội dung','quyet_dinh_so':'Quyết định số'}), hide_index=True, use_container_width=True)
@@ -943,7 +1012,7 @@ elif menu in ["➕ Cập nhật Hồ sơ cá nhân", "➕ Admin: Cập nhật H�
     with tab_ct:
         render_sub_tab("lich_su_cong_tac","cong_tac","Lịch sử công tác",[("tu_ngay","Từ ngày"),("den_ngay","Đến ngày"),("vi_tri","Vị trí / Chức danh"),("don_vi","Đơn vị công tác"),("quyet_dinh_so","Quyết định số")])
     with tab_luong:
-        render_sub_tab("dien_bien_luong","luong","Diễn biến lương",[("ngay_quyet_dinh","Ngày quyết định"),("bac_luong","Bậc lương"),("he_so","Hệ số"),("quyet_dinh_so","Quyết định số")])
+        render_sub_tab("dien_bien_luong","luong","Diễn biến lương",[("ngay_quyet_dinh","Ngày quyết định"),("bac_luong","Bậc lương"),("he_so","Hệ số"),("ngay_nang_bac_tiep_theo","Ngày tính nâng bậc lương tiếp theo"),("quyet_dinh_so","Quyết định số")])
 
     with tab_kt:
         with st.form("form_kt"):
