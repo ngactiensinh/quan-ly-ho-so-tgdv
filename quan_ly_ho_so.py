@@ -17,7 +17,7 @@ from datetime import datetime
 # 1. CẤU HÌNH TRANG
 # ==========================================
 st.set_page_config(
-    page_title="Hồ sơ CBCC - Ban Tuyên giáo & Dân vận Tuyên Quang",
+    page_title="Hồ sơ CBCC - Ban Tuyên giáo Tỉnh ủy Tuyên Quang",
     page_icon="🏛️",
     layout="wide",
     initial_sidebar_state="auto"
@@ -195,7 +195,6 @@ def get_logo_html(height="80px"):
 DS_DON_VI = [
     "Lãnh đạo Ban", "Văn phòng Ban", "Phòng Lý luận chính trị, Lịch sử Đảng",
     "Phòng Tuyên truyền, Báo chí - Xuất bản", "Phòng Khoa giáo, Văn hóa - Văn nghệ",
-    "Phòng Dân vận các cơ quan Nhà nước, dân tộc và tôn giáo", "Phòng Đoàn thể và các Hội"
 ]
 DS_CHUC_VU = [
     "Trưởng Ban", "Phó Trưởng ban Thường trực", "Phó Trưởng Ban", "Chánh Văn phòng",
@@ -231,7 +230,7 @@ if not st.session_state["logged_in"]:
             <div>
                 <div style="font-size:11px;color:#D4AF37;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;">Tỉnh ủy Tuyên Quang</div>
                 <div style="font-family:'Georgia',serif;font-size:22px;font-weight:900;color:#fff;letter-spacing:1.5px;text-transform:uppercase;line-height:1.2;margin-bottom:6px;">Hệ thống Quản lý Hồ sơ</div>
-                <div style="font-size:15px;color:#e8dfc8;font-weight:600;">Ban Tuyên giáo và Dân vận</div>
+                <div style="font-size:15px;color:#e8dfc8;font-weight:600;">Ban Tuyên giáo</div>
             </div>
         </div>
     </div>
@@ -371,7 +370,7 @@ with st.sidebar:
     st.markdown("---")
     st.markdown("""
     <div style='font-size:11px;color:rgba(212,175,55,0.4);text-align:center;line-height:1.8;padding-bottom:10px;'>
-        Ban Tuyên giáo & Dân vận<br>Tỉnh ủy Tuyên Quang<br>
+        Ban Tuyên giáo<br>Tỉnh ủy Tuyên Quang<br>
         <span style='font-size:10px;opacity:0.6;'>© Hệ thống quản lý CBCC v7.0</span>
     </div>
     """, unsafe_allow_html=True)
@@ -385,7 +384,7 @@ st.markdown(f"""
     <div class="gold-bar"></div>
     <div class="gov-header-text">
         <h1>Hệ thống Quản lý Hồ sơ Cán bộ, Công chức</h1>
-        <p class="subtitle">Ban Tuyên giáo và Dân vận — Tỉnh ủy Tuyên Quang</p>
+        <p class="subtitle">Ban Tuyên giáo — Tỉnh ủy Tuyên Quang</p>
     </div>
 </div>
 """, unsafe_allow_html=True)
@@ -441,7 +440,7 @@ def create_html_export(info, df_ct, df_l, df_kt):
   .footer{{margin-top:40px;text-align:right;font-size:12px;color:#888;border-top:1px solid #ddd;padding-top:12px;}}
 </style></head><body>
 <div class="header">
-  <p class="org">TỈNH ỦY TUYÊN QUANG — BAN TUYÊN GIÁO VÀ DÂN VẬN</p>
+  <p class="org">TỈNH ỦY TUYÊN QUANG — BAN TUYÊN GIÁO</p>
   <h1>Sơ yếu lý lịch cán bộ, công chức</h1>
 </div>
 <h3>I. Thông tin cá nhân</h3>
@@ -465,7 +464,7 @@ def create_html_export(info, df_ct, df_l, df_kt):
 <table class="data-table">{l_rows}</table>
 <h3>IV. Khen thưởng & kỷ luật</h3>
 <table class="data-table">{kt_rows}</table>
-<div class="footer">Xuất từ Hệ thống Quản lý Hồ sơ CBCC — Ban Tuyên giáo và Dân vận Tỉnh ủy Tuyên Quang</div>
+<div class="footer">Xuất từ Hệ thống Quản lý Hồ sơ CBCC — Ban Tuyên giáo Tỉnh ủy Tuyên Quang</div>
 </body></html>"""
     return html.encode('utf-8')
 
